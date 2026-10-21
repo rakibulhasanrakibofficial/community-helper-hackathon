@@ -1,99 +1,206 @@
 
 require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
-const MODEL = process.env.OLLAMA_MODEL || "gemma4:e2b";
+
+const HF_TOKEN = process.env.HF_TOKEN;
+const HF_MODEL =
+  process.env.HF_MODEL || "openai/gpt-oss-20b:fastest";
 
 app.use(cors());
 app.use(express.json({ limit: "20kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", model: MODEL });
+  res.json({
+    status: "ok",
+    model: HF_MODEL,
+    inference: "Hugging Face Inference Providers"
+  });
 });
 
 app.post("/api/help", async (req, res) => {
   const problem =
-    typeof req.body?.problem === "string" ? req.body.problem.trim() : "";
+    typeof req.body?.problem === "string"
+      ? req.body.problem.trim()
+      : "";
 
   if (!problem) {
-    return res.status(400).json({ error: "Describe your community problem first." });
+    return res.status(400).json({
+      error: "Please describe a community problem first."
+    });
   }
 
-  try {
-    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        stream: true,
-        think: false,
-        messages: [
-          {
-            role: "system",
-            content:
-  "You are a community problem-solving assistant. Analyze the user's problem and respond in this exact structure:\n\nCategory: [problem category]\n\nAnalysis: [brief explanation]\n\nAction Plan:\n1. [first practical step]\n2. [second practical step]\n3. [third practical step]\n\nWho to Contact: [relevant local authority or organization]. Do not invent specific contact details. Keep the answer concise, safe, and practical."
-          { role: "user", content: problem }
-        ],
-        options: { num_predict: 120, temperature: 0.3 }
-      })
+  if (problem.length > 2000) {
+    return res.status(400).json({
+      error: "Please keep the problem under 2000 characters."
     });
+  }
 
-    if (!response.ok || !response.body) {
-      return res.status(503).json({ error: "Ollama is unavailable. Check that it is running." });
+  if (!HF_TOKEN) {
+    return res.status(503).json({
+      error: "AI service is not configured. Please try again later."
+    });
+  }
+
+  let upstream;
+
+  try {
+    upstream = await fetch(
+      "https://router.huggingface.co/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HF_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: HF_MODEL,
+          stream: true,
+          max_tokens: 300,
+          temperature: 0.3,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a community problem-solving assistant. " +
+                "Respond concisely using this exact structure:\n\n" +
+                "Category: [problem category]\n\n" +
+                "Analysis: [brief explanation]\n\n" +
+                "Action Plan:\n" +
+                "1. [practical step]\n" +
+                "2. [practical step]\n" +
+                "3. [practical step]\n\n" +
+                "Who to Contact: [relevant authority or organization]. " +
+                "Never invent contact details. Make clear that suggestions " +
+                "are not verified official advice."
+            },
+            {
+              role: "user",
+              content: problem
+            }
+          ]
+        }),
+        signal: AbortSignal.timeout(90000)
+      }
+    );
+
+    if (!upstream.ok || !upstream.body) {
+      const details = await upstream.text().catch(() => "");
+      console.error(
+        "Hugging Face error:",
+        upstream.status,
+        details.slice(0, 500)
+      );
+
+      return res.status(502).json({
+        error:
+          "The AI provider could not complete the request. " +
+          "Check model availability and Hugging Face access."
+      });
     }
 
+    res.status(200);
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("X-Accel-Buffering", "no");
 
-    const reader = response.body.getReader();
+    const reader = upstream.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = "";
 
-    while (true) {
+    let buffer = "";
+    let clientDisconnected = false;
+
+    res.on("close", () => {
+      if (!res.writableEnded) {
+        clientDisconnected = true;
+        reader.cancel().catch(() => {});
+      }
+    });
+
+    while (!clientDisconnected) {
       const { value, done } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const item = JSON.parse(line);
+      const events = buffer.split("\n");
+      buffer = events.pop() || "";
 
-        if (item.message?.content) {
-          res.write(item.message.content);
+      for (const line of events) {
+        if (clientDisconnected) break;
+        if (!line.startsWith("data:")) continue;
+
+        const data = line.slice(5).trim();
+
+        if (!data || data === "[DONE]") continue;
+
+        let event;
+
+        try {
+          event = JSON.parse(data);
+        } catch {
+          continue;
         }
 
-        if (item.error) {
-          throw new Error(item.error);
+        if (event.error) {
+          throw new Error("Inference provider returned an error.");
+        }
+
+        const content = event.choices?.[0]?.delta?.content;
+
+        if (typeof content === "string" && content.length > 0) {
+          if (!res.write(content)) {
+            await new Promise(resolve => res.once("drain", resolve));
+          }
         }
       }
     }
 
-    if (buffer.trim()) {
-      const item = JSON.parse(buffer);
-      if (item.message?.content) res.write(item.message.content);
+    if (!clientDisconnected) {
+      buffer += decoder.decode();
+
+      for (const line of buffer.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+
+        const data = line.slice(5).trim();
+        if (!data || data === "[DONE]") continue;
+
+        try {
+          const event = JSON.parse(data);
+          const content = event.choices?.[0]?.delta?.content;
+
+          if (typeof content === "string") {
+            res.write(content);
+          }
+        } catch {
+          // Ignore incomplete final stream events.
+        }
+      }
+
+      res.end();
+    }
+  } catch (error) {
+    console.error("AI request failed:", error.message);
+
+    if (!res.headersSent) {
+      return res.status(502).json({
+        error: "AI request failed. Please try again later."
+      });
     }
 
-    res.end();
-  } catch (error) {
-    console.error("Streaming error:", error.message);
-    if (!res.headersSent) {
-      return res.status(503).json({ error: "AI streaming failed. Check Ollama and the model." });
+    if (!res.destroyed) {
+      res.end();
     }
-    res.end();
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`Model: ${MODEL}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server listening on port ${PORT}`);
+  console.log(`Configured model: ${HF_MODEL}`);
 });
