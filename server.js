@@ -8,9 +8,10 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL || "openrouter/free";
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+const NVIDIA_MODEL =
+  process.env.NVIDIA_MODEL ||
+  "nvidia/nemotron-3-ultra-550b-a55b";
 
 app.use(cors());
 app.use(express.json({ limit: "20kb" }));
@@ -19,8 +20,8 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
-    model: OPENROUTER_MODEL,
-    inference: "OpenRouter"
+    model: NVIDIA_MODEL,
+    inference: "NVIDIA API"
   });
 });
 
@@ -42,44 +43,48 @@ app.post("/api/help", async (req, res) => {
     });
   }
 
-  if (!OPENROUTER_API_KEY) {
+  if (!NVIDIA_API_KEY) {
     return res.status(503).json({
       error: "AI service is not configured."
     });
   }
 
+  let upstream;
+
   try {
-    const upstream = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
+    upstream = await fetch(
+      "https://integrate.api.nvidia.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          Authorization: `Bearer ${NVIDIA_API_KEY}`,
           "Content-Type": "application/json",
-          "HTTP-Referer":
-            "https://community-helper-hackathon.onrender.com",
-          "X-Title": "AI Community Helper"
+          Accept: "text/event-stream"
         },
         body: JSON.stringify({
-          model: OPENROUTER_MODEL,
+          model: NVIDIA_MODEL,
           stream: true,
-          max_tokens: 300,
-          temperature: 0.3,
+          max_tokens: 1200,
+          temperature: 0.6,
+          top_p: 0.95,
+          chat_template_kwargs: {
+            enable_thinking: false
+          },
           messages: [
             {
               role: "system",
               content:
-                "You are a community problem-solving assistant. " +
-                "Respond concisely using this structure:\n\n" +
+                "You are a practical community problem-solving assistant. " +
+                "Give concise, actionable advice in this exact structure:\n\n" +
                 "Category: [problem category]\n\n" +
                 "Analysis: [brief explanation]\n\n" +
                 "Action Plan:\n" +
                 "1. [practical step]\n" +
                 "2. [practical step]\n" +
                 "3. [practical step]\n\n" +
-                "Who to Contact: [relevant authority or organization]. " +
-                "Never invent contact details. State that suggestions " +
-                "are not verified official advice."
+                "Who to Contact: [relevant authority or organization].\n\n" +
+                "Never invent contact details. Explain that suggestions " +
+                "are not verified official advice. Do not expose private data."
             },
             {
               role: "user",
@@ -93,21 +98,22 @@ app.post("/api/help", async (req, res) => {
 
     if (!upstream.ok || !upstream.body) {
       const details = await upstream.text().catch(() => "");
+
       console.error(
-        "OpenRouter error:",
+        "NVIDIA error:",
         upstream.status,
         details.slice(0, 500)
       );
 
       return res.status(502).json({
-        error:
-          "AI provider request failed. Check Render logs."
+        error: "NVIDIA AI request failed. Check the server logs."
       });
     }
 
     res.status(200);
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("X-Accel-Buffering", "no");
 
     const reader = upstream.body.getReader();
     const decoder = new TextDecoder();
@@ -127,6 +133,7 @@ app.post("/api/help", async (req, res) => {
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
+
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
 
@@ -136,26 +143,27 @@ app.post("/api/help", async (req, res) => {
         }
 
         const data = line.slice(5).trim();
+
         if (!data || data === "[DONE]") continue;
 
+        let event;
+
         try {
-          const event = JSON.parse(data);
+          event = JSON.parse(data);
+        } catch {
+          continue;
+        }
 
-          if (event.error) {
-            throw new Error("OpenRouter returned a stream error.");
+        if (event.error) {
+          throw new Error("NVIDIA stream returned an error.");
+        }
+
+        const content = event.choices?.[0]?.delta?.content;
+
+        if (typeof content === "string" && content.length > 0) {
+          if (!res.write(content)) {
+            await new Promise(resolve => res.once("drain", resolve));
           }
-
-          const content = event.choices?.[0]?.delta?.content;
-
-          if (typeof content === "string" && content) {
-            if (!res.write(content)) {
-              await new Promise(resolve =>
-                res.once("drain", resolve)
-              );
-            }
-          }
-        } catch (error) {
-          if (error.message.includes("stream error")) throw error;
         }
       }
     }
@@ -172,28 +180,33 @@ app.post("/api/help", async (req, res) => {
         try {
           const event = JSON.parse(data);
           const content = event.choices?.[0]?.delta?.content;
-          if (typeof content === "string") res.write(content);
+
+          if (typeof content === "string") {
+            res.write(content);
+          }
         } catch {
-          // Ignore incomplete final event.
+          // Ignore incomplete final stream events.
         }
       }
 
       res.end();
     }
   } catch (error) {
-    console.error("OpenRouter request failed:", error.message);
+    console.error("NVIDIA request failed:", error.message);
 
     if (!res.headersSent) {
       return res.status(502).json({
-        error: "AI request failed. Please try again."
+        error: "AI request failed. Please try again later."
       });
     }
 
-    if (!res.destroyed) res.end();
+    if (!res.destroyed) {
+      res.end();
+    }
   }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server listening on port ${PORT}`);
-  console.log(`Configured model: ${OPENROUTER_MODEL}`);
+  console.log(`Configured model: ${NVIDIA_MODEL}`);
 });
