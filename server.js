@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -13,39 +14,86 @@ app.use(express.json({ limit: "20kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", app: "AI Community Helper", model: MODEL });
+  res.json({ status: "ok", model: MODEL });
 });
 
 app.post("/api/help", async (req, res) => {
-  const problem = typeof req.body?.problem === "string" ? req.body.problem.trim() : "";
-  if (!problem) return res.status(400).json({ error: "Please describe your community problem." });
-  if (problem.length > 2000) return res.status(400).json({ error: "Please keep the description under 2000 characters." });
+  const problem =
+    typeof req.body?.problem === "string" ? req.body.problem.trim() : "";
+
+  if (!problem) {
+    return res.status(400).json({ error: "Describe your community problem first." });
+  }
 
   try {
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: MODEL, stream: false, think: false,
+        model: MODEL,
+        stream: true,
+        think: false,
         messages: [
-          { role: "system", content: "You are AI Community Helper. Analyze a community issue and provide: Category, Brief analysis, and 3 practical next steps. Be concise, realistic, respectful, and clear. Do not claim an authority was contacted or a report submitted. For urgent danger, recommend contacting local emergency services or relevant authorities." },
+          {
+            role: "system",
+            content:
+  "You are a community problem-solving assistant. Analyze the user's problem and respond in this exact structure:\n\nCategory: [problem category]\n\nAnalysis: [brief explanation]\n\nAction Plan:\n1. [first practical step]\n2. [second practical step]\n3. [third practical step]\n\nWho to Contact: [relevant local authority or organization]. Do not invent specific contact details. Keep the answer concise, safe, and practical."
           { role: "user", content: problem }
         ],
-        options: { num_predict: 350 }
+        options: { num_predict: 120, temperature: 0.3 }
       })
     });
-    if (!response.ok) {
-      console.error("Ollama HTTP error:", response.status);
-      return res.status(503).json({ error: `Ollama returned HTTP ${response.status}. Check Ollama and model "${MODEL}".` });
+
+    if (!response.ok || !response.body) {
+      return res.status(503).json({ error: "Ollama is unavailable. Check that it is running." });
     }
-    const data = await response.json();
-    const answer = data.message?.content || data.response;
-    if (!answer) return res.status(502).json({ error: "The model returned an empty response. Please try again." });
-    res.json({ answer, model: MODEL });
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const item = JSON.parse(line);
+
+        if (item.message?.content) {
+          res.write(item.message.content);
+        }
+
+        if (item.error) {
+          throw new Error(item.error);
+        }
+      }
+    }
+
+    if (buffer.trim()) {
+      const item = JSON.parse(buffer);
+      if (item.message?.content) res.write(item.message.content);
+    }
+
+    res.end();
   } catch (error) {
-    console.error("AI connection error:", error.message);
-    res.status(503).json({ error: "Could not connect to Ollama. Start Ollama and check the model name." });
+    console.error("Streaming error:", error.message);
+    if (!res.headersSent) {
+      return res.status(503).json({ error: "AI streaming failed. Check Ollama and the model." });
+    }
+    res.end();
   }
 });
 
-app.listen(PORT, () => console.log(`AI Community Helper running at http://localhost:${PORT} | Model: ${MODEL}`));
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Model: ${MODEL}`);
+});

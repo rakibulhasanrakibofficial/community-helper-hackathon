@@ -1,54 +1,325 @@
+
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#101827">
-<title>Community Helper AI</title>
-<style>
-:root{color-scheme:dark;--bg:#101827;--mint:#65e6b4;--muted:#aab6c9;--line:#33415a}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:#f5f7fb;background:radial-gradient(ellipse at 70% 0%,#1d3850 0,transparent 45%),var(--bg);min-height:100vh}
-header{padding:22px max(5%,calc((100% - 1100px)/2));border-bottom:1px solid #293449;font-weight:800;font-size:20px}header span{color:var(--mint)}
-main{width:min(850px,92%);margin:60px auto 80px}.tag{color:var(--mint);font-size:12px;letter-spacing:2px;font-weight:800}
-h1{font-size:clamp(36px,7vw,62px);line-height:1.05;letter-spacing:-2px;margin:16px 0}.sub{color:var(--muted);line-height:1.75;max-width:650px;font-size:17px}
-.panel{margin-top:32px;padding:clamp(18px,4vw,30px);background:#1a2639ef;border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 70px #0002}
-label{display:block;margin-bottom:12px;font-weight:700}textarea{width:100%;min-height:140px;resize:vertical;border-radius:12px;border:1px solid #44536b;background:#111b2b;color:white;padding:15px;font:inherit;line-height:1.6}
-textarea:focus{outline:2px solid var(--mint);outline-offset:1px}.examples{display:flex;flex-wrap:wrap;gap:9px;margin-top:13px}button{font:inherit;cursor:pointer}
-.chip{padding:9px 12px;border:1px solid #40506a;border-radius:999px;background:#28364b;color:#e5edf9;font-size:13px}.chip:hover{border-color:var(--mint)}
-.submit{margin-top:20px;padding:14px 18px;width:100%;border:0;border-radius:11px;background:var(--mint);color:#10251e;font-weight:800}.submit:disabled{opacity:.65;cursor:wait}
-.hint{color:#8f9db2;font-size:12px;margin-top:12px}#result{display:none;margin-top:22px;padding:20px;border-radius:13px;background:#111b2b;border:1px solid var(--line);line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
-.status{display:flex;align-items:center;gap:8px;color:#b9c8d9;font-size:12px;margin-top:18px}.dot{width:8px;height:8px;border-radius:50%;background:var(--mint)}
-footer{color:#8997ac;text-align:center;padding:24px;font-size:12px;border-top:1px solid #293449}
-</style></head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Community Helper AI</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101827;
+      --mint: #65e6b4;
+      --muted: #aab6c9;
+      --line: #33415a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
+      color: #f5f7fb;
+      background: radial-gradient(ellipse at 70% 0%, #1d3850 0, transparent 45%), var(--bg);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 22px max(5%, calc((100% - 1100px) / 2));
+      border-bottom: 1px solid #293449;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    header span { color: var(--mint); }
+
+    main {
+      width: min(850px, 92%);
+      margin: 60px auto 80px;
+    }
+
+    .tag {
+      color: var(--mint);
+      font-size: 12px;
+      letter-spacing: 2px;
+      font-weight: 800;
+    }
+
+    h1 {
+      font-size: clamp(36px, 7vw, 62px);
+      line-height: 1.05;
+      letter-spacing: -2px;
+      margin: 16px 0;
+    }
+
+    .sub {
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 650px;
+      font-size: 17px;
+    }
+
+    .panel {
+      margin-top: 32px;
+      padding: clamp(18px, 4vw, 30px);
+      background: #1a2639ef;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 20px 70px #0002;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      resize: vertical;
+      border-radius: 12px;
+      border: 1px solid #44536b;
+      background: #111b2b;
+      color: white;
+      padding: 15px;
+      font: inherit;
+      line-height: 1.6;
+    }
+
+    textarea:focus {
+      outline: 2px solid var(--mint);
+      outline-offset: 1px;
+    }
+
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .chip {
+      padding: 9px 12px;
+      border: 1px solid #40506a;
+      border-radius: 999px;
+      background: #28364b;
+      color: #e5edf9;
+      font-size: 13px;
+    }
+
+    .chip:hover { border-color: var(--mint); }
+
+    .submit {
+      margin-top: 20px;
+      padding: 14px 18px;
+      width: 100%;
+      border: 0;
+      border-radius: 11px;
+      background: var(--mint);
+      color: #10251e;
+      font-weight: 800;
+    }
+
+    .submit:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .hint {
+      color: #8f9db2;
+      font-size: 12px;
+      margin-top: 12px;
+    }
+
+    #result {
+      display: none;
+      margin-top: 22px;
+      padding: 20px;
+      border-radius: 13px;
+      background: #111b2b;
+      border: 1px solid var(--line);
+      line-height: 1.8;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #b9c8d9;
+      font-size: 12px;
+      margin-top: 18px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mint);
+    }
+
+    footer {
+      color: #8997ac;
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      border-top: 1px solid #293449;
+    }
+  </style>
+</head>
+
 <body>
-<header>Community<span>Helper</span> AI</header>
-<main><div class="tag">AI FOR BETTER COMMUNITIES</div>
-<h1>Small problems.<br>Practical solutions.</h1>
-<p class="sub">Describe a problem in your community. Get an AI-generated category, a brief analysis, and actionable next steps.</p>
-<section class="panel">
-<label for="problem">What's happening in your community?</label>
-<textarea id="problem" maxlength="2000" placeholder="Example: The streetlights in our area have stopped working..."></textarea>
-<div class="examples" aria-label="Example problems">
-<button class="chip" type="button" data-example="Streetlights in our area are not working.">Streetlights</button>
-<button class="chip" type="button" data-example="Garbage is piling up near our local market.">Waste management</button>
-<button class="chip" type="button" data-example="A road near our school has dangerous potholes.">Road safety</button>
-<button class="chip" type="button" data-example="Our neighborhood has frequent water supply interruptions.">Water supply</button>
-</div>
-<button id="submit" class="submit" type="button">Generate Action Plan →</button>
-<div class="hint">Do not include passwords, private contact details, or other sensitive information.</div>
-<div id="result" role="status" aria-live="polite"></div>
-<div class="status"><span class="dot"></span><span>AI inference uses your locally running Ollama model.</span></div>
-</section></main>
-<footer>Community Helper AI · Open-weight model demo · Verify AI suggestions before acting.</footer>
-<script>
-const input=document.getElementById("problem"),result=document.getElementById("result"),submit=document.getElementById("submit");
-document.querySelectorAll("[data-example]").forEach(button=>button.addEventListener("click",()=>{input.value=button.dataset.example;input.focus()}));
-submit.addEventListener("click",async()=>{
- const problem=input.value.trim();result.style.display="block";
- if(!problem){result.textContent="Please describe a community problem first.";input.focus();return;}
- submit.disabled=true;submit.textContent="Generating action plan...";result.textContent="Analyzing your problem with AI...";
- try{
-  const response=await fetch("/api/help",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({problem})});
-  const data=await response.json();if(!response.ok)throw new Error(data.error||"Request failed");result.textContent=data.answer;
- }catch(error){result.textContent="Could not get AI help: "+error.message;}
- finally{submit.disabled=false;submit.textContent="Generate Action Plan →";}
-});
-</script></body></html>
+  <header>Community<span>Helper</span> AI</header>
+
+  <main>
+    <div class="tag">AI FOR BETTER COMMUNITIES</div>
+
+    <h1>Small problems.<br>Practical solutions.</h1>
+
+    <p class="sub">
+      Describe a problem in your community. Get an AI-generated
+      category, a brief analysis, and actionable next steps.
+    </p>
+
+    <section class="panel">
+      <label for="problem">
+        What's happening in your community?
+      </label>
+
+      <textarea
+        id="problem"
+        maxlength="2000"
+        placeholder="Example: The streetlights in our area have stopped working..."
+      ></textarea>
+
+      <div class="examples" aria-label="Example problems">
+        <button class="chip" type="button"
+          data-example="Streetlights in our area are not working.">
+          Streetlights
+        </button>
+
+        <button class="chip" type="button"
+          data-example="Garbage is piling up near our local market.">
+          Waste management
+        </button>
+
+        <button class="chip" type="button"
+          data-example="A road near our school has dangerous potholes.">
+          Road safety
+        </button>
+
+        <button class="chip" type="button"
+          data-example="Our neighborhood has frequent water supply interruptions.">
+          Water supply
+        </button>
+      </div>
+
+      <button id="submit" class="submit" type="button">
+        Generate Action Plan →
+      </button>
+
+      <div class="hint">
+        Do not include passwords, private contact details, or other sensitive information.
+      </div>
+
+      <div id="result" role="status" aria-live="polite"></div>
+
+      <div class="status">
+        <span class="dot"></span>
+        <span>AI inference uses your locally running Ollama model.</span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Community Helper AI · Open-weight model demo · Verify AI suggestions before acting.
+  </footer>
+
+  <script>
+    const input = document.getElementById("problem");
+    const result = document.getElementById("result");
+    const submit = document.getElementById("submit");
+
+    document.querySelectorAll("[data-example]").forEach(button => {
+      button.addEventListener("click", () => {
+        input.value = button.dataset.example;
+        input.focus();
+      });
+    });
+
+    submit.addEventListener("click", async () => {
+      const problem = input.value.trim();
+
+      result.style.display = "block";
+
+      if (!problem) {
+        result.textContent = "Please describe a community problem first.";
+        input.focus();
+        return;
+      }
+
+      submit.disabled = true;
+      submit.textContent = "Generating action plan...";
+      result.textContent = "";
+
+      try {
+        const response = await fetch("/api/help", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ problem })
+        });
+
+        if (!response.ok) {
+          let message = "Request failed.";
+
+          try {
+            const data = await response.json();
+            message = data.error || message;
+          } catch {}
+
+          throw new Error(message);
+        }
+
+        if (!response.body) {
+          throw new Error("Streaming is not supported by this response.");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { value, done } = await reader.read();
+
+          if (done) break;
+
+          result.textContent += decoder.decode(value, {
+            stream: true
+          });
+        }
+
+        result.textContent += decoder.decode();
+
+        if (!result.textContent.trim()) {
+          result.textContent = "The AI returned an empty response. Please try again.";
+        }
+      } catch (error) {
+        result.textContent = "Could not get AI help: " + error.message;
+      } finally {
+        submit.disabled = false;
+        submit.textContent = "Generate Action Plan →";
+      }
+    });
+  </script>
+</body>
+</html>
