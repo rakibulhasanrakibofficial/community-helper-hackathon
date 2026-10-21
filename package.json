@@ -1,0 +1,9 @@
+{
+  "name": "community-helper-hackathon",
+  "version": "1.0.0",
+  "description": "AI-powered community problem helper using a local open-weight model",
+  "main": "server.js",
+  "scripts": {"start": "node server.js"},
+  "license": "MIT",
+  "dependencies": {"cors": "^2.8.5", "dotenv": "^16.4.7", "express": "^4.21.2"}
+}
