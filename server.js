@@ -8,9 +8,9 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const HF_TOKEN = process.env.HF_TOKEN;
-const HF_MODEL =
-  process.env.HF_MODEL || "openai/gpt-oss-20b:fastest";
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL =
+  process.env.OPENROUTER_MODEL || "openrouter/free";
 
 app.use(cors());
 app.use(express.json({ limit: "20kb" }));
@@ -19,8 +19,8 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
-    model: HF_MODEL,
-    inference: "Hugging Face Inference Providers"
+    model: OPENROUTER_MODEL,
+    inference: "OpenRouter"
   });
 });
 
@@ -42,25 +42,26 @@ app.post("/api/help", async (req, res) => {
     });
   }
 
-  if (!HF_TOKEN) {
+  if (!OPENROUTER_API_KEY) {
     return res.status(503).json({
-      error: "AI service is not configured. Please try again later."
+      error: "AI service is not configured."
     });
   }
 
-  let upstream;
-
   try {
-    upstream = await fetch(
-      "https://router.huggingface.co/v1/chat/completions",
+    const upstream = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${HF_TOKEN}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer":
+            "https://community-helper-hackathon.onrender.com",
+          "X-Title": "AI Community Helper"
         },
         body: JSON.stringify({
-          model: HF_MODEL,
+          model: OPENROUTER_MODEL,
           stream: true,
           max_tokens: 300,
           temperature: 0.3,
@@ -69,7 +70,7 @@ app.post("/api/help", async (req, res) => {
               role: "system",
               content:
                 "You are a community problem-solving assistant. " +
-                "Respond concisely using this exact structure:\n\n" +
+                "Respond concisely using this structure:\n\n" +
                 "Category: [problem category]\n\n" +
                 "Analysis: [brief explanation]\n\n" +
                 "Action Plan:\n" +
@@ -77,7 +78,7 @@ app.post("/api/help", async (req, res) => {
                 "2. [practical step]\n" +
                 "3. [practical step]\n\n" +
                 "Who to Contact: [relevant authority or organization]. " +
-                "Never invent contact details. Make clear that suggestions " +
+                "Never invent contact details. State that suggestions " +
                 "are not verified official advice."
             },
             {
@@ -93,22 +94,20 @@ app.post("/api/help", async (req, res) => {
     if (!upstream.ok || !upstream.body) {
       const details = await upstream.text().catch(() => "");
       console.error(
-        "Hugging Face error:",
+        "OpenRouter error:",
         upstream.status,
         details.slice(0, 500)
       );
 
       return res.status(502).json({
         error:
-          "The AI provider could not complete the request. " +
-          "Check model availability and Hugging Face access."
+          "AI provider request failed. Check Render logs."
       });
     }
 
     res.status(200);
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("X-Accel-Buffering", "no");
 
     const reader = upstream.body.getReader();
     const decoder = new TextDecoder();
@@ -128,36 +127,35 @@ app.post("/api/help", async (req, res) => {
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
 
-      const events = buffer.split("\n");
-      buffer = events.pop() || "";
-
-      for (const line of events) {
-        if (clientDisconnected) break;
-        if (!line.startsWith("data:")) continue;
-
-        const data = line.slice(5).trim();
-
-        if (!data || data === "[DONE]") continue;
-
-        let event;
-
-        try {
-          event = JSON.parse(data);
-        } catch {
+      for (const line of lines) {
+        if (clientDisconnected || !line.startsWith("data:")) {
           continue;
         }
 
-        if (event.error) {
-          throw new Error("Inference provider returned an error.");
-        }
+        const data = line.slice(5).trim();
+        if (!data || data === "[DONE]") continue;
 
-        const content = event.choices?.[0]?.delta?.content;
+        try {
+          const event = JSON.parse(data);
 
-        if (typeof content === "string" && content.length > 0) {
-          if (!res.write(content)) {
-            await new Promise(resolve => res.once("drain", resolve));
+          if (event.error) {
+            throw new Error("OpenRouter returned a stream error.");
           }
+
+          const content = event.choices?.[0]?.delta?.content;
+
+          if (typeof content === "string" && content) {
+            if (!res.write(content)) {
+              await new Promise(resolve =>
+                res.once("drain", resolve)
+              );
+            }
+          }
+        } catch (error) {
+          if (error.message.includes("stream error")) throw error;
         }
       }
     }
@@ -174,33 +172,28 @@ app.post("/api/help", async (req, res) => {
         try {
           const event = JSON.parse(data);
           const content = event.choices?.[0]?.delta?.content;
-
-          if (typeof content === "string") {
-            res.write(content);
-          }
+          if (typeof content === "string") res.write(content);
         } catch {
-          // Ignore incomplete final stream events.
+          // Ignore incomplete final event.
         }
       }
 
       res.end();
     }
   } catch (error) {
-    console.error("AI request failed:", error.message);
+    console.error("OpenRouter request failed:", error.message);
 
     if (!res.headersSent) {
       return res.status(502).json({
-        error: "AI request failed. Please try again later."
+        error: "AI request failed. Please try again."
       });
     }
 
-    if (!res.destroyed) {
-      res.end();
-    }
+    if (!res.destroyed) res.end();
   }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server listening on port ${PORT}`);
-  console.log(`Configured model: ${HF_MODEL}`);
+  console.log(`Configured model: ${OPENROUTER_MODEL}`);
 });
