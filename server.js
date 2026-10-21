@@ -8,23 +8,25 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
-const NVIDIA_MODEL =
-  process.env.NVIDIA_MODEL ||
-  "nvidia/nemotron-3-ultra-550b-a55b";
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL =
+  process.env.OPENROUTER_MODEL ||
+  "nvidia/nemotron-3-ultra-550b-a55b:free";
 
 app.use(cors());
 app.use(express.json({ limit: "20kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// Health check
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
-    model: NVIDIA_MODEL,
-    inference: "NVIDIA API"
+    model: OPENROUTER_MODEL,
+    inference: "OpenRouter"
   });
 });
 
+// Generate a community action plan
 app.post("/api/help", async (req, res) => {
   const problem =
     typeof req.body?.problem === "string"
@@ -43,7 +45,7 @@ app.post("/api/help", async (req, res) => {
     });
   }
 
-  if (!NVIDIA_API_KEY) {
+  if (!OPENROUTER_API_KEY) {
     return res.status(503).json({
       error: "AI service is not configured."
     });
@@ -53,29 +55,27 @@ app.post("/api/help", async (req, res) => {
 
   try {
     upstream = await fetch(
-      "https://integrate.api.nvidia.com/v1/chat/completions",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${NVIDIA_API_KEY}`,
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
-          Accept: "text/event-stream"
+          "HTTP-Referer":
+            "https://community-helper-hackathon.onrender.com",
+          "X-Title": "AI Community Helper"
         },
         body: JSON.stringify({
-          model: NVIDIA_MODEL,
+          model: OPENROUTER_MODEL,
           stream: true,
-          max_tokens: 1200,
-          temperature: 0.6,
-          top_p: 0.95,
-          chat_template_kwargs: {
-            enable_thinking: false
-          },
+          max_tokens: 700,
+          temperature: 0.4,
           messages: [
             {
               role: "system",
               content:
-                "You are a practical community problem-solving assistant. " +
-                "Give concise, actionable advice in this exact structure:\n\n" +
+                "You are an AI community problem-solving assistant. " +
+                "Give practical, concise, safe advice using this format:\n\n" +
                 "Category: [problem category]\n\n" +
                 "Analysis: [brief explanation]\n\n" +
                 "Action Plan:\n" +
@@ -83,8 +83,9 @@ app.post("/api/help", async (req, res) => {
                 "2. [practical step]\n" +
                 "3. [practical step]\n\n" +
                 "Who to Contact: [relevant authority or organization].\n\n" +
-                "Never invent contact details. Explain that suggestions " +
-                "are not verified official advice. Do not expose private data."
+                "Never invent phone numbers, contact details, or official " +
+                "procedures. Make clear that suggestions are not verified " +
+                "official advice."
             },
             {
               role: "user",
@@ -100,13 +101,14 @@ app.post("/api/help", async (req, res) => {
       const details = await upstream.text().catch(() => "");
 
       console.error(
-        "NVIDIA error:",
+        "OpenRouter error:",
         upstream.status,
         details.slice(0, 500)
       );
 
       return res.status(502).json({
-        error: "NVIDIA AI request failed. Check the server logs."
+        error:
+          "AI provider request failed. Please check the server logs."
       });
     }
 
@@ -130,6 +132,7 @@ app.post("/api/help", async (req, res) => {
 
     while (!clientDisconnected) {
       const { value, done } = await reader.read();
+
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
@@ -155,14 +158,17 @@ app.post("/api/help", async (req, res) => {
         }
 
         if (event.error) {
-          throw new Error("NVIDIA stream returned an error.");
+          console.error("OpenRouter stream error:", event.error);
+          throw new Error("OpenRouter stream returned an error.");
         }
 
         const content = event.choices?.[0]?.delta?.content;
 
         if (typeof content === "string" && content.length > 0) {
           if (!res.write(content)) {
-            await new Promise(resolve => res.once("drain", resolve));
+            await new Promise(resolve =>
+              res.once("drain", resolve)
+            );
           }
         }
       }
@@ -175,6 +181,7 @@ app.post("/api/help", async (req, res) => {
         if (!line.startsWith("data:")) continue;
 
         const data = line.slice(5).trim();
+
         if (!data || data === "[DONE]") continue;
 
         try {
@@ -192,7 +199,7 @@ app.post("/api/help", async (req, res) => {
       res.end();
     }
   } catch (error) {
-    console.error("NVIDIA request failed:", error.message);
+    console.error("OpenRouter request failed:", error.message);
 
     if (!res.headersSent) {
       return res.status(502).json({
@@ -208,5 +215,5 @@ app.post("/api/help", async (req, res) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server listening on port ${PORT}`);
-  console.log(`Configured model: ${NVIDIA_MODEL}`);
+  console.log(`Configured model: ${OPENROUTER_MODEL}`);
 });
