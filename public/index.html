@@ -151,6 +151,8 @@
       overflow-wrap: anywhere;
     }
 
+    #result.error { border-color: #f87171; }
+
     .status {
       display: flex;
       align-items: center;
@@ -174,6 +176,11 @@
       font-size: 12px;
       border-top: 1px solid #293449;
     }
+
+    @media (max-width: 600px) {
+      main { margin-top: 35px; }
+      h1 { letter-spacing: -1px; }
+    }
   </style>
 </head>
 
@@ -191,9 +198,7 @@
     </p>
 
     <section class="panel">
-      <label for="problem">
-        What's happening in your community?
-      </label>
+      <label for="problem">What's happening in your community?</label>
 
       <textarea
         id="problem"
@@ -235,7 +240,7 @@
 
       <div class="status">
         <span class="dot"></span>
-        <span>AI inference uses a hosted open-weight model via Hugging Face.</span>
+        <span>AI powered by Google Gemma via Ollama Cloud.</span>
       </div>
     </section>
   </main>
@@ -260,6 +265,7 @@
       const problem = input.value.trim();
 
       result.style.display = "block";
+      result.classList.remove("error");
 
       if (!problem) {
         result.textContent = "Please describe a community problem first.";
@@ -269,51 +275,30 @@
 
       submit.disabled = true;
       submit.textContent = "Generating action plan...";
-      result.textContent = "";
+      result.textContent = "Connecting to Gemma via Ollama Cloud...";
 
       try {
         const response = await fetch("/api/help", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ problem })
         });
 
+        const data = await response.json().catch(() => ({}));
+
         if (!response.ok) {
-          let message = "Request failed.";
-
-          try {
-            const data = await response.json();
-            message = data.error || message;
-          } catch {}
-
-          throw new Error(message);
+          throw new Error(data.error || `Request failed (${response.status}).`);
         }
 
-        if (!response.body) {
-          throw new Error("Streaming is not supported by this response.");
+        const answer = data.answer || data.response || data.reply;
+
+        if (!answer) {
+          throw new Error("The AI returned an empty answer.");
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          const { value, done } = await reader.read();
-
-          if (done) break;
-
-          result.textContent += decoder.decode(value, {
-            stream: true
-          });
-        }
-
-        result.textContent += decoder.decode();
-
-        if (!result.textContent.trim()) {
-          result.textContent = "The AI returned an empty response. Please try again.";
-        }
+        result.textContent = answer;
       } catch (error) {
+        result.classList.add("error");
         result.textContent = "Could not get AI help: " + error.message;
       } finally {
         submit.disabled = false;
