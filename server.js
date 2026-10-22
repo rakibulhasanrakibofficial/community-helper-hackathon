@@ -1,219 +1,113 @@
 
-require("dotenv").config();
-
 const express = require("express");
-const cors = require("cors");
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
+const MODEL = process.env.OLLAMA_MODEL || "gemma4:cloud";
+const OLLAMA_API_URL = "https://ollama.com/api/chat";
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL ||
-  "nvidia/nemotron-3-ultra-550b-a55b:free";
-
-app.use(cors());
-app.use(express.json({ limit: "20kb" }));
+app.disable("x-powered-by");
+app.use(express.json({ limit: "30kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// Health check
 app.get("/api/health", (_req, res) => {
   res.json({
-    status: "ok",
-    model: OPENROUTER_MODEL,
-    inference: "OpenRouter"
+    ok: true,
+    service: "StudyMate AI",
+    model: MODEL,
+    provider: "Ollama Cloud"
   });
 });
 
-// Generate a community action plan
-app.post("/api/help", async (req, res) => {
-  const problem =
-    typeof req.body?.problem === "string"
-      ? req.body.problem.trim()
-      : "";
+app.post("/api/study", async (req, res) => {
+  const { topic, mode = "explain", language = "English" } = req.body || {};
 
-  if (!problem) {
-    return res.status(400).json({
-      error: "Please describe a community problem first."
-    });
+  if (typeof topic !== "string" || !topic.trim()) {
+    return res.status(400).json({ error: "Please enter a topic." });
   }
 
-  if (problem.length > 2000) {
-    return res.status(400).json({
-      error: "Please keep the problem under 2000 characters."
-    });
+  if (topic.length > 2000) {
+    return res.status(400).json({ error: "Topic must be under 2000 characters." });
   }
 
-  if (!OPENROUTER_API_KEY) {
+  const tasks = {
+    explain: "Explain the topic simply in 3-5 short sentences and include one example.",
+    notes: "Create concise study notes with a definition and 5 key points.",
+    quiz: "Create 3 multiple-choice questions with four options each and an answer key."
+  };
+
+  if (!tasks[mode]) {
+    return res.status(400).json({ error: "Choose Explain, Notes, or Quiz." });
+  }
+
+  const apiKey = process.env.OLLAMA_API_KEY;
+
+  if (!apiKey) {
     return res.status(503).json({
-      error: "AI service is not configured."
+      error: "Ollama Cloud API key is missing. Set OLLAMA_API_KEY in your environment."
     });
   }
-
-  let upstream;
 
   try {
-    upstream = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer":
-            "https://community-helper-hackathon.onrender.com",
-          "X-Title": "AI Community Helper"
-        },
-        body: JSON.stringify({
-          model: OPENROUTER_MODEL,
-          stream: true,
-          max_tokens: 700,
-          temperature: 0.4,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are an AI community problem-solving assistant. " +
-                "Give practical, concise, safe advice using this format:\n\n" +
-                "Category: [problem category]\n\n" +
-                "Analysis: [brief explanation]\n\n" +
-                "Action Plan:\n" +
-                "1. [practical step]\n" +
-                "2. [practical step]\n" +
-                "3. [practical step]\n\n" +
-                "Who to Contact: [relevant authority or organization].\n\n" +
-                "Never invent phone numbers, contact details, or official " +
-                "procedures. Make clear that suggestions are not verified " +
-                "official advice."
-            },
-            {
-              role: "user",
-              content: problem
-            }
-          ]
-        }),
-        signal: AbortSignal.timeout(90000)
-      }
-    );
-
-    if (!upstream.ok || !upstream.body) {
-      const details = await upstream.text().catch(() => "");
-
-      console.error(
-        "OpenRouter error:",
-        upstream.status,
-        details.slice(0, 500)
-      );
-
-      return res.status(502).json({
-        error:
-          "AI provider request failed. Please check the server logs."
-      });
-    }
-
-    res.status(200);
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("X-Accel-Buffering", "no");
-
-    const reader = upstream.body.getReader();
-    const decoder = new TextDecoder();
-
-    let buffer = "";
-    let clientDisconnected = false;
-
-    res.on("close", () => {
-      if (!res.writableEnded) {
-        clientDisconnected = true;
-        reader.cancel().catch(() => {});
-      }
+    const response = await fetch(OLLAMA_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        stream: false,
+        messages: [
+          {
+            role: "system",
+            content: `You are StudyMate, a helpful study assistant. Reply in ${language === "Bangla" ? "Bangla" : "English"}. ${tasks[mode]} Keep the response clear and concise.`
+          },
+          { role: "user", content: topic.trim() }
+        ],
+        options: {
+          temperature: 0.3,
+          num_predict: 220
+        }
+      }),
+      signal: AbortSignal.timeout(90000)
     });
 
-    while (!clientDisconnected) {
-      const { value, done } = await reader.read();
+    const data = await response.json();
 
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        if (clientDisconnected || !line.startsWith("data:")) {
-          continue;
-        }
-
-        const data = line.slice(5).trim();
-
-        if (!data || data === "[DONE]") continue;
-
-        let event;
-
-        try {
-          event = JSON.parse(data);
-        } catch {
-          continue;
-        }
-
-        if (event.error) {
-          console.error("OpenRouter stream error:", event.error);
-          throw new Error("OpenRouter stream returned an error.");
-        }
-
-        const content = event.choices?.[0]?.delta?.content;
-
-        if (typeof content === "string" && content.length > 0) {
-          if (!res.write(content)) {
-            await new Promise(resolve =>
-              res.once("drain", resolve)
-            );
-          }
-        }
-      }
-    }
-
-    if (!clientDisconnected) {
-      buffer += decoder.decode();
-
-      for (const line of buffer.split("\n")) {
-        if (!line.startsWith("data:")) continue;
-
-        const data = line.slice(5).trim();
-
-        if (!data || data === "[DONE]") continue;
-
-        try {
-          const event = JSON.parse(data);
-          const content = event.choices?.[0]?.delta?.content;
-
-          if (typeof content === "string") {
-            res.write(content);
-          }
-        } catch {
-          // Ignore incomplete final stream events.
-        }
-      }
-
-      res.end();
-    }
-  } catch (error) {
-    console.error("OpenRouter request failed:", error.message);
-
-    if (!res.headersSent) {
-      return res.status(502).json({
-        error: "AI request failed. Please try again later."
+    if (!response.ok) {
+      console.error("Ollama Cloud error:", response.status, data);
+      return res.status(response.status === 429 ? 429 : 502).json({
+        error: response.status === 429
+          ? "Cloud usage limit reached. Please try again later."
+          : "Ollama Cloud request failed. Check the model and API access."
       });
     }
 
-    if (!res.destroyed) {
-      res.end();
+    const answer = data.message?.content?.trim();
+
+    if (!answer) {
+      return res.status(502).json({
+        error: "The model returned an empty answer. Please try again."
+      });
     }
+
+    return res.json({
+      answer,
+      model: MODEL,
+      provider: "Ollama Cloud"
+    });
+  } catch (error) {
+    console.error("StudyMate request error:", error.message);
+
+    return res.status(504).json({
+      error: "Ollama Cloud did not respond in time. Please retry."
+    });
   }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server listening on port ${PORT}`);
-  console.log(`Configured model: ${OPENROUTER_MODEL}`);
+app.listen(PORT, () => {
+  console.log(`StudyMate running on port ${PORT}`);
+  console.log(`AI provider: Ollama Cloud | Model: ${MODEL}`);
 });
