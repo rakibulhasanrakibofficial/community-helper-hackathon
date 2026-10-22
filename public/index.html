@@ -29,13 +29,12 @@ h1{font-size:clamp(32px,5vw,52px);line-height:1.1;letter-spacing:-1.5px;margin:1
 .sub{color:var(--muted);max-width:650px;margin:auto}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:24px;margin-bottom:20px}
 label{font-weight:750;display:block;margin-bottom:12px}
-textarea,input,select{width:100%;background:#0d1c29;border:1px solid #345164;border-radius:12px;padding:14px;color:#f4fbff;font:inherit}
-textarea{min-height:125px;resize:vertical}
-textarea:focus,input:focus,select:focus{outline:2px solid var(--cyan)}
-.controls{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;margin-top:12px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.chip{background:#203849;border:1px solid #36566a;color:#e4f5ff;border-radius:999px;padding:8px 12px;font-size:13px}
+textarea{width:100%;min-height:125px;resize:vertical;background:#0d1c29;border:1px solid #345164;border-radius:12px;padding:14px;color:#f4fbff;font:inherit}
+textarea:focus{outline:2px solid var(--cyan)}
+.chips,.followups,.result-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip,.followups button{background:#203849;border:1px solid #36566a;color:#e4f5ff;border-radius:999px;padding:8px 12px;font-size:13px}
 .primary{width:100%;margin-top:16px;background:var(--mint);color:#08251d;font-weight:850;border:0;border-radius:12px;padding:15px}
+.primary:disabled{opacity:.6}
 .hint,.muted{color:var(--muted);font-size:12px}
 #result{display:none}
 .loading{padding:25px;text-align:center;color:var(--cyan)}
@@ -44,7 +43,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--cyan)}
 .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
 .metric{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;min-width:0}
 .metric small{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}
-.metric strong{font-size:17px;overflow-wrap:anywhere}
+.metric strong{font-size:15px;overflow-wrap:anywhere}
 .risk{border:1px solid var(--yellow);background:linear-gradient(120deg,#252b36,#102a37);border-radius:20px;padding:22px;margin-bottom:18px}
 .risk.high{border-color:var(--red)}
 .risk.low{border-color:var(--mint)}
@@ -53,9 +52,6 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--cyan)}
 .badge.low{background:var(--mint);color:#06271d}
 .risk h2{font-size:23px;margin:10px 0 5px}
 .risk p{color:#b3c9d6;margin:5px 0}
-.score-wrap{display:flex;gap:18px;align-items:center}
-.score{flex-shrink:0;width:78px;height:78px;border:7px solid var(--yellow);border-radius:50%;display:grid;place-content:center;text-align:center;font-size:22px;font-weight:850}
-.score small{display:block;font-size:10px;color:var(--muted);font-weight:500}
 .section{background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:20px;margin:15px 0}
 .section h3{margin:0 0 13px;font-size:18px}
 .section-title{color:var(--cyan);font-size:12px;font-weight:850;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px}
@@ -67,14 +63,10 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--cyan)}
 .contact{border-left:4px solid var(--red);background:#102532;border-radius:12px;padding:15px;margin:14px 0}
 details{border:1px solid var(--line);border-radius:14px;margin-top:15px;overflow:hidden}
 summary{cursor:pointer;padding:15px;color:var(--cyan);font-weight:800}
-.details-content{padding:0 15px 16px;color:#c1d3de;white-space:pre-wrap}
-.output-text{white-space:pre-wrap;overflow-wrap:anywhere}
-.result-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
-.followups{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.followups button{border:1px solid var(--line);background:#102a37;color:#e7f7ff;border-radius:99px;padding:9px 13px}
-footer{text-align:center;color:#809bab;border-top:1px solid var(--line);padding:24px;font-size:12px}
-@media(max-width:680px){main{margin-top:24px}.panel{padding:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{grid-template-columns:1fr}.score-wrap{align-items:flex-start}.score{width:66px;height:66px;font-size:18px}.risk h2{font-size:20px}}
-@media print{body{background:white;color:#111}header,.hero,.input-panel,.result-actions,.followups,footer{display:none!important}main{width:100%;margin:0}.panel,.section,.risk,.metric,.contact{background:white;color:#111;border:1px solid #bbb;break-inside:avoid}.muted,.risk p,.section p{color:#333}.badge{border:1px solid #777}}
+.details-content{padding:0 16px 18px;color:#c1d3de;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8}
+.result-actions{margin-top:16px}
+@media(max-width:680px){main{margin-top:24px}.panel{padding:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.risk h2{font-size:20px}}
+@media print{body{background:white;color:#111}header,.hero,.input-panel,.result-actions,.followups,footer{display:none!important}main{width:100%;margin:0}.panel,.section,.risk,.metric,.contact{background:white;color:#111;border:1px solid #bbb;break-inside:avoid}.muted,.risk p{color:#333}details:not([open])>.details-content{display:block}}
 </style>
 </head>
 <body>
@@ -134,82 +126,81 @@ function escapeHTML(value) {
 }
 
 function parsePlan(text) {
-  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-  const sections = {};
+  const sections = { category: [], assessment: [], actions: [], avoid: [], contacts: [] };
   let current = "analysis";
-  sections[current] = [];
 
-  for (const line of lines) {
-    const clean = line.replace(/^#{1,6}\s*/, "").replace(/\*\*/g, "").replace(/^[-*]\s*/, "").trim();
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    const clean = line
+      .replace(/^#{1,6}\s*/, "")
+      .replace(/\*\*/g, "")
+      .trim();
     const lower = clean.toLowerCase();
 
-    if (/problem categor|category/.test(lower)) current = "category";
-    else if (/short assessment|assessment|risk level|risk assessment/.test(lower)) current = "assessment";
+    if (/problem categor|^category\b/.test(lower)) current = "category";
+    else if (/short assessment|^assessment\b|risk assessment/.test(lower)) current = "assessment";
     else if (/prioritized action|action steps|what to do|recommended actions/.test(lower)) current = "actions";
-    else if (/what residents should avoid|what to avoid|do not|avoid/.test(lower)) current = "avoid";
-    else if (/when to contact|emergency contact|contact local authority|emergency services/.test(lower)) current = "contacts";
-    else if (/full analysis|additional details|analysis/.test(lower)) current = "analysis";
-    else {
-      (sections[current] ||= []).push(clean);
-    }
+    else if (/what residents should avoid|what to avoid|^do not\b|^avoid\b/.test(lower)) current = "avoid";
+    else if (/when to contact|emergency contact|contact local authority/.test(lower)) current = "contacts";
+    else sections[current].push(line);
   }
 
   return sections;
 }
 
-function getText(sections, key) {
-  return (sections[key] || []).join("\n").trim();
-}
-
-function extractActions(text) {
-  return text.split(/\n/).map(s => s.trim()).filter(s => s && (/^(\d+[.)]|[-*])\s*/.test(s))).map(s => s.replace(/^(\d+[.)]|[-*])\s*/, "").replace(/\*\*/g, ""));
+function extractItems(lines) {
+  return lines.map(line => line
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/\*\*/g, "")
+    .replace(/^\s*(?:\d+[.)]|[-*])\s*/, "")
+    .trim()
+  ).filter(Boolean);
 }
 
 function renderPlan(answer) {
   const sections = parsePlan(answer);
-  const assessment = getText(sections, "assessment");
-  const category = getText(sections, "category") || "Community issue";
-  const actions = extractActions(getText(sections, "actions"));
-  const avoid = getText(sections, "avoid");
-  const contacts = getText(sections, "contacts");
-  const fullAnalysis = getText(sections, "analysis");
+  const category = extractItems(sections.category).join(" ") || "Community issue";
+  const assessment = extractItems(sections.assessment).join(" ") || "Review the suggested steps and verify the local situation.";
+  const actions = extractItems(sections.actions);
+  const avoid = extractItems(sections.avoid);
+  const contacts = extractItems(sections.contacts);
 
-  // Only infer a coarse label from the wording; do not invent a numerical risk score.
-  const all = (category + " " + assessment + " " + answer).toLowerCase();
+  const fullAnswer = answer.trim();
+  const all = (category + " " + assessment + " " + fullAnswer).toLowerCase();
   const high = /immediate danger|life-threatening|electrocution|active fire|gas leak|severe flooding|serious injury|urgent emergency/.test(all);
   const low = /minor issue|low risk|routine maintenance|non-urgent/.test(all);
   const label = high ? "High concern" : low ? "Lower concern" : "Needs review";
   const riskClass = high ? "high" : low ? "low" : "";
-  const title = high ? "Priority safety concern" : "Community action assessment";
 
   const actionHTML = actions.length
-    ? actions.slice(0, 6).map((action, i) =>
-        `<div class="action"><span class="num">${i + 1}</span><p>${escapeHTML(action)}</p></div>`
-      ).join("")
-    : `<div class="action"><span class="num">1</span><p>${escapeHTML(assessment || answer.slice(0, 500))}</p></div>`;
+    ? actions.slice(0, 6).map((item, i) =>
+      `<div class="action"><span class="num">${i + 1}</span><p>${escapeHTML(item)}</p></div>`
+    ).join("")
+    : `<div class="action"><span class="num">1</span><p>${escapeHTML(assessment)}</p></div>`;
 
-  const avoidItems = avoid.split(/\n/).map(s => s.trim()).filter(Boolean)
-    .map(s => s.replace(/^(\d+[.)]|[-*])\s*/, ""));
-  const avoidHTML = avoidItems.length
-    ? avoidItems.map(item => `<li>${escapeHTML(item)}</li>`).join("")
-    : "<li>Do not put yourself or others at risk. Follow relevant local safety guidance.</li>";
+  const avoidHTML = avoid.length
+    ? avoid.map(item => `<li>${escapeHTML(item)}</li>`).join("")
+    : "<li>Avoid actions that could put residents at risk. Follow verified local safety guidance.</li>";
 
-  const contactText = contacts || "Contact the relevant local authority for this issue. Verify official contact details independently.";
-  const analysisText = fullAnalysis || answer;
+  const contactText = contacts.length
+    ? contacts.join(" ")
+    : "Contact the relevant local authority. Verify official contact details independently.";
 
   result.innerHTML = `
     <div class="grid">
-      <div class="metric"><small>Issue category</small><strong>${escapeHTML(category.slice(0, 120))}</strong></div>
+      <div class="metric"><small>Issue category</small><strong>${escapeHTML(category.slice(0,120))}</strong></div>
       <div class="metric"><small>Assessment</small><strong>${escapeHTML(label)}</strong></div>
       <div class="metric"><small>AI provider</small><strong>Gemma Cloud</strong></div>
-      <div class="metric"><small>Recommended next step</small><strong>${high ? "Prioritize safety" : "Review action plan"}</strong></div>
+      <div class="metric"><small>Next step</small><strong>${high ? "Prioritize safety" : "Review action plan"}</strong></div>
     </div>
 
     <div class="risk ${riskClass}">
       <span class="badge ${riskClass}">${escapeHTML(label)}</span>
-      <h2>${escapeHTML(title)}</h2>
-      <p>${escapeHTML(assessment || "Review the community issue and the suggested actions below. This is AI-generated guidance, not a verified risk measurement.")}</p>
-      <p class="muted">This label is a text-based indication, not a validated risk score or live sensor reading.</p>
+      <h2>${high ? "Priority safety concern" : "Community action assessment"}</h2>
+      <p>${escapeHTML(assessment)}</p>
+      <p class="muted">This is an AI-generated text assessment, not a verified risk score or live sensor reading.</p>
     </div>
 
     <section class="section">
@@ -231,7 +222,7 @@ function renderPlan(answer) {
 
     <details>
       <summary>See full analysis +</summary>
-      <div class="details-content">${escapeHTML(analysisText)}</div>
+      <div class="details-content">${escapeHTML(fullAnswer)}</div>
     </details>
 
     <div class="followups">
@@ -247,9 +238,10 @@ function renderPlan(answer) {
   `;
 
   result.style.display = "block";
+
   document.getElementById("copyPlan").addEventListener("click", async () => {
     try {
-      await navigator.clipboard.writeText(answer);
+      await navigator.clipboard.writeText(fullAnswer);
       document.getElementById("copyPlan").textContent = "Copied!";
     } catch {
       document.getElementById("copyPlan").textContent = "Copy unavailable";
@@ -262,13 +254,14 @@ function renderPlan(answer) {
     button.addEventListener("click", () => {
       input.value = input.value.trim() + "\n\nFollow-up: " + button.dataset.follow;
       input.focus();
-      input.scrollIntoView({behavior:"smooth", block:"center"});
+      input.scrollIntoView({ behavior: "smooth", block: "center" });
     });
   });
 }
 
 submit.addEventListener("click", async () => {
   const problem = input.value.trim();
+
   if (!problem) {
     result.style.display = "block";
     result.innerHTML = "<p>Please describe a community problem first.</p>";
@@ -284,8 +277,8 @@ submit.addEventListener("click", async () => {
   try {
     const response = await fetch("/api/help", {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({problem})
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ problem })
     });
 
     const data = await response.json().catch(() => ({}));
@@ -296,8 +289,7 @@ submit.addEventListener("click", async () => {
 
     renderPlan(answer);
   } catch (error) {
-    result.innerHTML = `<section class="section warning"><h3>Could not get AI help</h3><p>${escapeHTML(error.message)}</p><p class="muted">Please retry. If this continues, check the Render service logs.</p></section>`;
-    result.style.display = "block";
+    result.innerHTML = `<section class="section warning"><h3>Could not get AI help</h3><p>${escapeHTML(error.message)}</p><p class="muted">Please retry. If this continues, check Render service logs.</p></section>`;
   } finally {
     submit.disabled = false;
     submit.textContent = "Generate Action Plan →";
