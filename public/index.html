@@ -2,309 +2,307 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101827">
-  <title>Community Helper AI</title>
-
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #101827;
-      --mint: #65e6b4;
-      --muted: #aab6c9;
-      --line: #33415a;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
-      color: #f5f7fb;
-      background: radial-gradient(ellipse at 70% 0%, #1d3850 0, transparent 45%), var(--bg);
-      min-height: 100vh;
-    }
-
-    header {
-      padding: 22px max(5%, calc((100% - 1100px) / 2));
-      border-bottom: 1px solid #293449;
-      font-weight: 800;
-      font-size: 20px;
-    }
-
-    header span { color: var(--mint); }
-
-    main {
-      width: min(850px, 92%);
-      margin: 60px auto 80px;
-    }
-
-    .tag {
-      color: var(--mint);
-      font-size: 12px;
-      letter-spacing: 2px;
-      font-weight: 800;
-    }
-
-    h1 {
-      font-size: clamp(36px, 7vw, 62px);
-      line-height: 1.05;
-      letter-spacing: -2px;
-      margin: 16px 0;
-    }
-
-    .sub {
-      color: var(--muted);
-      line-height: 1.75;
-      max-width: 650px;
-      font-size: 17px;
-    }
-
-    .panel {
-      margin-top: 32px;
-      padding: clamp(18px, 4vw, 30px);
-      background: #1a2639ef;
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      box-shadow: 0 20px 70px #0002;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 12px;
-      font-weight: 700;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 140px;
-      resize: vertical;
-      border-radius: 12px;
-      border: 1px solid #44536b;
-      background: #111b2b;
-      color: white;
-      padding: 15px;
-      font: inherit;
-      line-height: 1.6;
-    }
-
-    textarea:focus {
-      outline: 2px solid var(--mint);
-      outline-offset: 1px;
-    }
-
-    .examples {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 9px;
-      margin-top: 13px;
-    }
-
-    button {
-      font: inherit;
-      cursor: pointer;
-    }
-
-    .chip {
-      padding: 9px 12px;
-      border: 1px solid #40506a;
-      border-radius: 999px;
-      background: #28364b;
-      color: #e5edf9;
-      font-size: 13px;
-    }
-
-    .chip:hover { border-color: var(--mint); }
-
-    .submit {
-      margin-top: 20px;
-      padding: 14px 18px;
-      width: 100%;
-      border: 0;
-      border-radius: 11px;
-      background: var(--mint);
-      color: #10251e;
-      font-weight: 800;
-    }
-
-    .submit:disabled {
-      opacity: 0.65;
-      cursor: wait;
-    }
-
-    .hint {
-      color: #8f9db2;
-      font-size: 12px;
-      margin-top: 12px;
-    }
-
-    #result {
-      display: none;
-      margin-top: 22px;
-      padding: 20px;
-      border-radius: 13px;
-      background: #111b2b;
-      border: 1px solid var(--line);
-      line-height: 1.8;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-
-    #result.error { border-color: #f87171; }
-
-    .status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #b9c8d9;
-      font-size: 12px;
-      margin-top: 18px;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--mint);
-    }
-
-    footer {
-      color: #8997ac;
-      text-align: center;
-      padding: 24px;
-      font-size: 12px;
-      border-top: 1px solid #293449;
-    }
-
-    @media (max-width: 600px) {
-      main { margin-top: 35px; }
-      h1 { letter-spacing: -1px; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07151d">
+<title>Community Helper AI</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#07151d; --panel:#102a37; --card:#112532;
+  --line:#244554; --cyan:#35c5d5; --mint:#61e5b5;
+  --muted:#91b1c1; --red:#ff6969; --yellow:#f5c66b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#eef7fc;font:15px/1.6 Inter,system-ui,Arial,sans-serif}
+header{height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 max(20px,calc((100% - 1120px)/2));border-bottom:1px solid var(--line);background:#07151df5;position:sticky;top:0;z-index:5}
+.brand{font-size:19px;font-weight:850;display:flex;align-items:center;gap:10px}
+.logo{display:grid;place-items:center;background:var(--cyan);color:#05212a;border-radius:12px;width:38px;height:38px;font-size:22px}
+.brand span{color:var(--cyan)}
+button{font:inherit;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.btn{background:#102a37;color:#e9f8ff;border:1px solid var(--line);border-radius:13px;padding:10px 16px}
+main{width:min(1000px,94%);margin:38px auto 65px}
+.hero{text-align:center;margin-bottom:28px}
+.eyebrow{color:var(--cyan);font-weight:800;letter-spacing:2px;font-size:12px}
+h1{font-size:clamp(32px,5vw,52px);line-height:1.1;letter-spacing:-1.5px;margin:12px 0}
+.sub{color:var(--muted);max-width:650px;margin:auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:24px;margin-bottom:20px}
+label{font-weight:750;display:block;margin-bottom:12px}
+textarea,input,select{width:100%;background:#0d1c29;border:1px solid #345164;border-radius:12px;padding:14px;color:#f4fbff;font:inherit}
+textarea{min-height:125px;resize:vertical}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--cyan)}
+.controls{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;margin-top:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{background:#203849;border:1px solid #36566a;color:#e4f5ff;border-radius:999px;padding:8px 12px;font-size:13px}
+.primary{width:100%;margin-top:16px;background:var(--mint);color:#08251d;font-weight:850;border:0;border-radius:12px;padding:15px}
+.hint,.muted{color:var(--muted);font-size:12px}
+#result{display:none}
+.loading{padding:25px;text-align:center;color:var(--cyan)}
+.spinner{display:inline-block;width:19px;height:19px;border:3px solid #28505d;border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;min-width:0}
+.metric small{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}
+.metric strong{font-size:17px;overflow-wrap:anywhere}
+.risk{border:1px solid var(--yellow);background:linear-gradient(120deg,#252b36,#102a37);border-radius:20px;padding:22px;margin-bottom:18px}
+.risk.high{border-color:var(--red)}
+.risk.low{border-color:var(--mint)}
+.badge{display:inline-block;border-radius:99px;padding:4px 12px;background:var(--yellow);color:#261c09;font-weight:850;font-size:12px}
+.badge.high{background:var(--red);color:#290909}
+.badge.low{background:var(--mint);color:#06271d}
+.risk h2{font-size:23px;margin:10px 0 5px}
+.risk p{color:#b3c9d6;margin:5px 0}
+.score-wrap{display:flex;gap:18px;align-items:center}
+.score{flex-shrink:0;width:78px;height:78px;border:7px solid var(--yellow);border-radius:50%;display:grid;place-content:center;text-align:center;font-size:22px;font-weight:850}
+.score small{display:block;font-size:10px;color:var(--muted);font-weight:500}
+.section{background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:20px;margin:15px 0}
+.section h3{margin:0 0 13px;font-size:18px}
+.section-title{color:var(--cyan);font-size:12px;font-weight:850;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px}
+.action{display:flex;gap:12px;align-items:flex-start;padding:13px;border:1px solid #267889;background:#123744;border-radius:13px;margin:9px 0}
+.num{flex-shrink:0;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--cyan);color:#06232a;font-weight:900}
+.action p{margin:0}
+.warning{border-color:#68454b;background:#282630}
+.warning h3{color:var(--red)}
+.contact{border-left:4px solid var(--red);background:#102532;border-radius:12px;padding:15px;margin:14px 0}
+details{border:1px solid var(--line);border-radius:14px;margin-top:15px;overflow:hidden}
+summary{cursor:pointer;padding:15px;color:var(--cyan);font-weight:800}
+.details-content{padding:0 15px 16px;color:#c1d3de;white-space:pre-wrap}
+.output-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.result-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+.followups{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.followups button{border:1px solid var(--line);background:#102a37;color:#e7f7ff;border-radius:99px;padding:9px 13px}
+footer{text-align:center;color:#809bab;border-top:1px solid var(--line);padding:24px;font-size:12px}
+@media(max-width:680px){main{margin-top:24px}.panel{padding:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{grid-template-columns:1fr}.score-wrap{align-items:flex-start}.score{width:66px;height:66px;font-size:18px}.risk h2{font-size:20px}}
+@media print{body{background:white;color:#111}header,.hero,.input-panel,.result-actions,.followups,footer{display:none!important}main{width:100%;margin:0}.panel,.section,.risk,.metric,.contact{background:white;color:#111;border:1px solid #bbb;break-inside:avoid}.muted,.risk p,.section p{color:#333}.badge{border:1px solid #777}}
+</style>
 </head>
-
 <body>
-  <header>Community<span>Helper</span> AI</header>
+<header>
+  <div class="brand"><div class="logo">≋</div>Community<span>Helper AI</span></div>
+  <button class="btn" id="newChat">New chat</button>
+</header>
 
-  <main>
-    <div class="tag">AI FOR BETTER COMMUNITIES</div>
-
+<main>
+  <section class="hero">
+    <div class="eyebrow">AI FOR BETTER COMMUNITIES</div>
     <h1>Small problems.<br>Practical solutions.</h1>
+    <p class="sub">Turn local observations into a clear community action plan with priorities, safety advice and next steps.</p>
+  </section>
 
-    <p class="sub">
-      Describe a problem in your community. Get an AI-generated
-      category, a brief analysis, and actionable next steps.
-    </p>
+  <section class="panel input-panel">
+    <label for="problem">What's happening in your community?</label>
+    <textarea id="problem" maxlength="2000" placeholder="Describe the problem, where it is happening, and who is affected..."></textarea>
+    <div class="chips">
+      <button class="chip" data-example="Streetlights in our area are not working.">Streetlights</button>
+      <button class="chip" data-example="Garbage is piling up near our local market.">Waste management</button>
+      <button class="chip" data-example="A road near our school has dangerous potholes.">Road safety</button>
+      <button class="chip" data-example="Our neighborhood has frequent water supply interruptions.">Water supply</button>
+    </div>
+    <button class="primary" id="submit">Generate Action Plan →</button>
+    <p class="hint">Avoid sharing private contact details. AI suggestions can be inaccurate; verify important information.</p>
+  </section>
 
-    <section class="panel">
-      <label for="problem">What's happening in your community?</label>
+  <section id="result" class="panel" aria-live="polite"></section>
+</main>
 
-      <textarea
-        id="problem"
-        maxlength="2000"
-        placeholder="Example: The streetlights in our area have stopped working..."
-      ></textarea>
+<footer>Community Helper AI · Powered by Gemma via Ollama Cloud · Verify advice with trusted local sources.</footer>
 
-      <div class="examples" aria-label="Example problems">
-        <button class="chip" type="button"
-          data-example="Streetlights in our area are not working.">
-          Streetlights
-        </button>
+<script>
+const input = document.getElementById("problem");
+const result = document.getElementById("result");
+const submit = document.getElementById("submit");
 
-        <button class="chip" type="button"
-          data-example="Garbage is piling up near our local market.">
-          Waste management
-        </button>
+document.querySelectorAll("[data-example]").forEach(button => {
+  button.addEventListener("click", () => {
+    input.value = button.dataset.example;
+    input.focus();
+  });
+});
 
-        <button class="chip" type="button"
-          data-example="A road near our school has dangerous potholes.">
-          Road safety
-        </button>
+document.getElementById("newChat").addEventListener("click", () => {
+  input.value = "";
+  result.style.display = "none";
+  result.innerHTML = "";
+  input.focus();
+});
 
-        <button class="chip" type="button"
-          data-example="Our neighborhood has frequent water supply interruptions.">
-          Water supply
-        </button>
-      </div>
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  })[ch]);
+}
 
-      <button id="submit" class="submit" type="button">
-        Generate Action Plan →
-      </button>
+function parsePlan(text) {
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const sections = {};
+  let current = "analysis";
+  sections[current] = [];
 
-      <div class="hint">
-        Do not include passwords, private contact details, or other sensitive information.
-      </div>
+  for (const line of lines) {
+    const clean = line.replace(/^#{1,6}\s*/, "").replace(/\*\*/g, "").replace(/^[-*]\s*/, "").trim();
+    const lower = clean.toLowerCase();
 
-      <div id="result" role="status" aria-live="polite"></div>
+    if (/problem categor|category/.test(lower)) current = "category";
+    else if (/short assessment|assessment|risk level|risk assessment/.test(lower)) current = "assessment";
+    else if (/prioritized action|action steps|what to do|recommended actions/.test(lower)) current = "actions";
+    else if (/what residents should avoid|what to avoid|do not|avoid/.test(lower)) current = "avoid";
+    else if (/when to contact|emergency contact|contact local authority|emergency services/.test(lower)) current = "contacts";
+    else if (/full analysis|additional details|analysis/.test(lower)) current = "analysis";
+    else {
+      (sections[current] ||= []).push(clean);
+    }
+  }
 
-      <div class="status">
-        <span class="dot"></span>
-        <span>AI powered by Google Gemma via Ollama Cloud.</span>
-      </div>
+  return sections;
+}
+
+function getText(sections, key) {
+  return (sections[key] || []).join("\n").trim();
+}
+
+function extractActions(text) {
+  return text.split(/\n/).map(s => s.trim()).filter(s => s && (/^(\d+[.)]|[-*])\s*/.test(s))).map(s => s.replace(/^(\d+[.)]|[-*])\s*/, "").replace(/\*\*/g, ""));
+}
+
+function renderPlan(answer) {
+  const sections = parsePlan(answer);
+  const assessment = getText(sections, "assessment");
+  const category = getText(sections, "category") || "Community issue";
+  const actions = extractActions(getText(sections, "actions"));
+  const avoid = getText(sections, "avoid");
+  const contacts = getText(sections, "contacts");
+  const fullAnalysis = getText(sections, "analysis");
+
+  // Only infer a coarse label from the wording; do not invent a numerical risk score.
+  const all = (category + " " + assessment + " " + answer).toLowerCase();
+  const high = /immediate danger|life-threatening|electrocution|active fire|gas leak|severe flooding|serious injury|urgent emergency/.test(all);
+  const low = /minor issue|low risk|routine maintenance|non-urgent/.test(all);
+  const label = high ? "High concern" : low ? "Lower concern" : "Needs review";
+  const riskClass = high ? "high" : low ? "low" : "";
+  const title = high ? "Priority safety concern" : "Community action assessment";
+
+  const actionHTML = actions.length
+    ? actions.slice(0, 6).map((action, i) =>
+        `<div class="action"><span class="num">${i + 1}</span><p>${escapeHTML(action)}</p></div>`
+      ).join("")
+    : `<div class="action"><span class="num">1</span><p>${escapeHTML(assessment || answer.slice(0, 500))}</p></div>`;
+
+  const avoidItems = avoid.split(/\n/).map(s => s.trim()).filter(Boolean)
+    .map(s => s.replace(/^(\d+[.)]|[-*])\s*/, ""));
+  const avoidHTML = avoidItems.length
+    ? avoidItems.map(item => `<li>${escapeHTML(item)}</li>`).join("")
+    : "<li>Do not put yourself or others at risk. Follow relevant local safety guidance.</li>";
+
+  const contactText = contacts || "Contact the relevant local authority for this issue. Verify official contact details independently.";
+  const analysisText = fullAnalysis || answer;
+
+  result.innerHTML = `
+    <div class="grid">
+      <div class="metric"><small>Issue category</small><strong>${escapeHTML(category.slice(0, 120))}</strong></div>
+      <div class="metric"><small>Assessment</small><strong>${escapeHTML(label)}</strong></div>
+      <div class="metric"><small>AI provider</small><strong>Gemma Cloud</strong></div>
+      <div class="metric"><small>Recommended next step</small><strong>${high ? "Prioritize safety" : "Review action plan"}</strong></div>
+    </div>
+
+    <div class="risk ${riskClass}">
+      <span class="badge ${riskClass}">${escapeHTML(label)}</span>
+      <h2>${escapeHTML(title)}</h2>
+      <p>${escapeHTML(assessment || "Review the community issue and the suggested actions below. This is AI-generated guidance, not a verified risk measurement.")}</p>
+      <p class="muted">This label is a text-based indication, not a validated risk score or live sensor reading.</p>
+    </div>
+
+    <section class="section">
+      <div class="section-title">What to do</div>
+      <h3>Recommended action plan</h3>
+      ${actionHTML}
     </section>
-  </main>
 
-  <footer>
-    Community Helper AI · Open-weight model demo · Verify AI suggestions before acting.
-  </footer>
+    <section class="section warning">
+      <h3>Do not</h3>
+      <ul>${avoidHTML}</ul>
+    </section>
 
-  <script>
-    const input = document.getElementById("problem");
-    const result = document.getElementById("result");
-    const submit = document.getElementById("submit");
+    <div class="contact">
+      <strong>When to contact local authority</strong>
+      <p>${escapeHTML(contactText)}</p>
+      ${high ? "<p><strong>If there is immediate danger, contact local emergency services now.</strong></p>" : ""}
+    </div>
 
-    document.querySelectorAll("[data-example]").forEach(button => {
-      button.addEventListener("click", () => {
-        input.value = button.dataset.example;
-        input.focus();
-      });
+    <details>
+      <summary>See full analysis +</summary>
+      <div class="details-content">${escapeHTML(analysisText)}</div>
+    </details>
+
+    <div class="followups">
+      <button type="button" data-follow="Help me prioritize the next steps.">Prioritize actions</button>
+      <button type="button" data-follow="What safety precautions should residents take?">Safety precautions</button>
+      <button type="button" data-follow="How can residents report this issue responsibly?">How to report</button>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn" id="copyPlan">Copy plan</button>
+      <button class="btn" id="printPlan">Print / save as PDF</button>
+    </div>
+  `;
+
+  result.style.display = "block";
+  document.getElementById("copyPlan").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(answer);
+      document.getElementById("copyPlan").textContent = "Copied!";
+    } catch {
+      document.getElementById("copyPlan").textContent = "Copy unavailable";
+    }
+  });
+
+  document.getElementById("printPlan").addEventListener("click", () => window.print());
+
+  result.querySelectorAll("[data-follow]").forEach(button => {
+    button.addEventListener("click", () => {
+      input.value = input.value.trim() + "\n\nFollow-up: " + button.dataset.follow;
+      input.focus();
+      input.scrollIntoView({behavior:"smooth", block:"center"});
+    });
+  });
+}
+
+submit.addEventListener("click", async () => {
+  const problem = input.value.trim();
+  if (!problem) {
+    result.style.display = "block";
+    result.innerHTML = "<p>Please describe a community problem first.</p>";
+    input.focus();
+    return;
+  }
+
+  submit.disabled = true;
+  submit.textContent = "Generating action plan...";
+  result.style.display = "block";
+  result.innerHTML = '<div class="loading"><span class="spinner"></span>Gemma is preparing your action plan…</div>';
+
+  try {
+    const response = await fetch("/api/help", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({problem})
     });
 
-    submit.addEventListener("click", async () => {
-      const problem = input.value.trim();
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
 
-      result.style.display = "block";
-      result.classList.remove("error");
+    const answer = data.answer || data.response || data.reply;
+    if (!answer) throw new Error("The AI returned an empty answer.");
 
-      if (!problem) {
-        result.textContent = "Please describe a community problem first.";
-        input.focus();
-        return;
-      }
-
-      submit.disabled = true;
-      submit.textContent = "Generating action plan...";
-      result.textContent = "Connecting to Gemma via Ollama Cloud...";
-
-      try {
-        const response = await fetch("/api/help", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ problem })
-        });
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(data.error || `Request failed (${response.status}).`);
-        }
-
-        const answer = data.answer || data.response || data.reply;
-
-        if (!answer) {
-          throw new Error("The AI returned an empty answer.");
-        }
-
-        result.textContent = answer;
-      } catch (error) {
-        result.classList.add("error");
-        result.textContent = "Could not get AI help: " + error.message;
-      } finally {
-        submit.disabled = false;
-        submit.textContent = "Generate Action Plan →";
-      }
-    });
-  </script>
+    renderPlan(answer);
+  } catch (error) {
+    result.innerHTML = `<section class="section warning"><h3>Could not get AI help</h3><p>${escapeHTML(error.message)}</p><p class="muted">Please retry. If this continues, check the Render service logs.</p></section>`;
+    result.style.display = "block";
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Generate Action Plan →";
+  }
+});
+</script>
 </body>
 </html>
