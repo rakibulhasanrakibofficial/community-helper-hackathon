@@ -4,8 +4,7 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MODEL = process.env.OLLAMA_MODEL || "gemma4:cloud";
-const OLLAMA_API_URL = "https://ollama.com/api/chat";
+const MODEL = process.env.OLLAMA_MODEL || "gemma4:31b";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "30kb" }));
@@ -14,61 +13,65 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
-    service: "StudyMate AI",
-    model: MODEL,
-    provider: "Ollama Cloud"
+    service: "Community Helper AI",
+    provider: "Ollama Cloud",
+    model: MODEL
   });
 });
 
-app.post("/api/study", async (req, res) => {
-  const { topic, mode = "explain", language = "English" } = req.body || {};
-
-  if (typeof topic !== "string" || !topic.trim()) {
-    return res.status(400).json({ error: "Please enter a topic." });
-  }
-
-  if (topic.length > 2000) {
-    return res.status(400).json({ error: "Topic must be under 2000 characters." });
-  }
-
-  const tasks = {
-    explain: "Explain the topic simply in 3-5 short sentences and include one example.",
-    notes: "Create concise study notes with a definition and 5 key points.",
-    quiz: "Create 3 multiple-choice questions with four options each and an answer key."
-  };
-
-  if (!tasks[mode]) {
-    return res.status(400).json({ error: "Choose Explain, Notes, or Quiz." });
-  }
-
+app.post("/api/chat", async (req, res) => {
   const apiKey = process.env.OLLAMA_API_KEY;
 
   if (!apiKey) {
     return res.status(503).json({
-      error: "Ollama Cloud API key is missing. Set OLLAMA_API_KEY in your environment."
+      error: "OLLAMA_API_KEY is missing in environment variables."
     });
   }
 
+  const body = req.body || {};
+  const issue =
+    body.question ||
+    body.message ||
+    body.prompt ||
+    body.text ||
+    body.content ||
+    body.issue ||
+    body.description;
+
+  if (!issue && !Array.isArray(body.messages)) {
+    return res.status(400).json({
+      error: "Please describe your community issue."
+    });
+  }
+
+  const messages = Array.isArray(body.messages)
+    ? body.messages
+    : [
+        {
+          role: "system",
+          content:
+            "You are Community Helper AI. Help residents make practical action plans for local problems such as garbage, streetlights, road safety, and water supply. Give clear steps, priorities, and safe suggestions. Never claim an issue has been reported or invent official contacts. Keep answers concise."
+        },
+        {
+          role: "user",
+          content: String(issue).slice(0, 4000)
+        }
+      ];
+
   try {
-    const response = await fetch(OLLAMA_API_URL, {
+    const response = await fetch("https://ollama.com/api/chat", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         model: MODEL,
+        messages,
         stream: false,
-        messages: [
-          {
-            role: "system",
-            content: `You are StudyMate, a helpful study assistant. Reply in ${language === "Bangla" ? "Bangla" : "English"}. ${tasks[mode]} Keep the response clear and concise.`
-          },
-          { role: "user", content: topic.trim() }
-        ],
         options: {
           temperature: 0.3,
-          num_predict: 220
+          num_predict: 400
         }
       }),
       signal: AbortSignal.timeout(90000)
@@ -79,9 +82,10 @@ app.post("/api/study", async (req, res) => {
     if (!response.ok) {
       console.error("Ollama Cloud error:", response.status, data);
       return res.status(response.status === 429 ? 429 : 502).json({
-        error: response.status === 429
-          ? "Cloud usage limit reached. Please try again later."
-          : "Ollama Cloud request failed. Check the model and API access."
+        error:
+          response.status === 429
+            ? "Ollama Cloud usage limit reached. Try again later."
+            : data.error || "Ollama Cloud request failed."
       });
     }
 
@@ -89,25 +93,27 @@ app.post("/api/study", async (req, res) => {
 
     if (!answer) {
       return res.status(502).json({
-        error: "The model returned an empty answer. Please try again."
+        error: "The AI returned an empty response. Please retry."
       });
     }
 
     return res.json({
       answer,
-      model: MODEL,
-      provider: "Ollama Cloud"
+      response: answer,
+      reply: answer,
+      provider: "Ollama Cloud",
+      model: MODEL
     });
   } catch (error) {
-    console.error("StudyMate request error:", error.message);
+    console.error("AI request failed:", error.message);
 
-    return res.status(504).json({
-      error: "Ollama Cloud did not respond in time. Please retry."
+    return res.status(503).json({
+      error: "Could not connect to Ollama Cloud. Please try again."
     });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`StudyMate running on port ${PORT}`);
-  console.log(`AI provider: Ollama Cloud | Model: ${MODEL}`);
+  console.log(`Community Helper AI running on port ${PORT}`);
+  console.log(`Provider: Ollama Cloud | Model: ${MODEL}`);
 });
