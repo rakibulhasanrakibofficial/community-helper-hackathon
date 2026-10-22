@@ -125,8 +125,17 @@ function escapeHTML(value) {
   })[ch]);
 }
 
+
 function parsePlan(text) {
-  const sections = { category: [], assessment: [], actions: [], avoid: [], contacts: [] };
+  const sections = {
+    category: [],
+    assessment: [],
+    actions: [],
+    avoid: [],
+    contacts: [],
+    analysis: []
+  };
+
   let current = "analysis";
 
   for (const raw of text.split(/\r?\n/)) {
@@ -137,18 +146,27 @@ function parsePlan(text) {
       .replace(/^#{1,6}\s*/, "")
       .replace(/\*\*/g, "")
       .trim();
+
     const lower = clean.toLowerCase();
 
-    if (/problem categor|^category\b/.test(lower)) current = "category";
-    else if (/short assessment|^assessment\b|risk assessment/.test(lower)) current = "assessment";
-    else if (/prioritized action|action steps|what to do|recommended actions/.test(lower)) current = "actions";
-    else if (/what residents should avoid|what to avoid|^do not\b|^avoid\b/.test(lower)) current = "avoid";
-    else if (/when to contact|emergency contact|contact local authority/.test(lower)) current = "contacts";
-    else sections[current].push(line);
+    if (/problem categor|^category\b/.test(lower)) {
+      current = "category";
+    } else if (/short assessment|^assessment\b|risk assessment/.test(lower)) {
+      current = "assessment";
+    } else if (/prioritized action|action steps|what to do|recommended actions/.test(lower)) {
+      current = "actions";
+    } else if (/what residents should avoid|what to avoid|^do not\b|^avoid\b/.test(lower)) {
+      current = "avoid";
+    } else if (/when to contact|emergency contact|contact local authority/.test(lower)) {
+      current = "contacts";
+    } else {
+      sections[current].push(line);
+    }
   }
 
   return sections;
 }
+
 
 function extractItems(lines) {
   return lines.map(line => line
