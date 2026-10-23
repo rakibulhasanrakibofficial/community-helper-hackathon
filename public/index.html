@@ -714,19 +714,22 @@ function cleanItems(lines) {
 }
 
 function renderPlan(answer) {
-  const sections = parsePlan(answer);
-
-  const category = cleanItems(sections.category).join(" ") || "Community issue";
-  const assessment = cleanItems(sections.assessment).join(" ") ||
-    "Review the suggested steps and verify the local situation.";
-  const actions = cleanItems(sections.actions);
-  const avoid = cleanItems(sections.avoid);
-  const contacts = cleanItems(sections.contacts);
   const fullAnswer = String(answer).trim();
   const isBengali = Array.from(fullAnswer).some(char => {
     const codePoint = char.codePointAt(0);
     return codePoint >= 0x0980 && codePoint <= 0x09FF;
   });
+  const sections = parsePlan(answer);
+
+  const category = cleanItems(sections.category).join(" ") ||
+    (isBengali ? "কমিউনিটি সমস্যা" : "Community issue");
+  const assessment = cleanItems(sections.assessment).join(" ") ||
+    (isBengali
+      ? "প্রস্তাবিত পদক্ষেপগুলো পর্যালোচনা করুন এবং স্থানীয় পরিস্থিতি যাচাই করুন।"
+      : "Review the suggested steps and verify the local situation.");
+  const actions = cleanItems(sections.actions);
+  const avoid = cleanItems(sections.avoid);
+  const contacts = cleanItems(sections.contacts);
   const ui = isBengali ? {
     issueCategory: "সমস্যার ধরন",
     assessment: "মূল্যায়ন",
@@ -776,7 +779,7 @@ function renderPlan(answer) {
     contactTitle: "When to contact local authority",
     emergency: "If there is immediate danger, contact local emergency services now.",
     fallbackAvoid: "Avoid actions that could put residents at risk. Follow verified local safety guidance.",
-    fallbackContact: ui.fallbackContact,
+    fallbackContact: "Contact the relevant local authority. Verify official contact details independently.",
     fullAnalysis: "See full analysis",
     prioritize: "Prioritize actions",
     safety: "Safety precautions",
@@ -812,7 +815,7 @@ function renderPlan(answer) {
 
   const contactText = contacts.length
     ? contacts.join(" ")
-    : "Contact the relevant local authority. Verify official contact details independently.";
+    : ui.fallbackContact;
 
   result.innerHTML = `
     <div class="grid">
@@ -843,7 +846,7 @@ function renderPlan(answer) {
     <div class="contact">
       <strong>${escapeHTML(ui.contactTitle)}</strong>
       <p>${escapeHTML(contactText)}</p>
-      ${high ? "<p><strong>${escapeHTML(ui.emergency)}</strong></p>" : ""}
+      ${high ? `<p><strong>${escapeHTML(ui.emergency)}</strong></p>` : ""}
     </div>
 
     <details>
