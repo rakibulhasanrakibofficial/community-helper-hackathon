@@ -130,6 +130,27 @@ textarea:focus { outline:2px solid var(--cyan); }
   padding:15px;
 }
 .hint,.muted { color:var(--muted); font-size:12px; }
+.voice-controls {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:9px;
+  margin-top:12px;
+}
+.voice-controls .voice-language-label {
+  display:inline;
+  margin:0;
+  color:var(--muted);
+  font-size:12px;
+}
+#voiceInput.recording {
+  border-color:var(--red);
+  background:#3b2029;
+  color:#fff;
+}
+#voiceStatus { flex-basis:100%; }
+.voice-listen-btn { margin-top:10px; }
+#voiceLanguage { padding:8px 12px; }
 #result { display:none; }
 .loading { padding:25px; text-align:center; color:var(--cyan); }
 .spinner {
@@ -347,6 +368,16 @@ footer {
     <label for="problem">What's happening in your community?</label>
     <textarea id="problem" maxlength="2000" placeholder="Describe the problem, where it is happening, and who is affected..."></textarea>
 
+    <div class="voice-controls" role="group" aria-label="Voice controls">
+      <button class="btn" id="voiceInput" type="button">🎤 Speak to type</button>
+      <label class="voice-language-label" for="voiceLanguage">Voice language</label>
+      <select id="voiceLanguage" class="btn">
+        <option value="en-US">English</option>
+        <option value="bn-BD">বাংলা (Bangladesh)</option>
+      </select>
+      <span id="voiceStatus" class="hint" aria-live="polite">Microphone works in supported browsers on HTTPS or localhost.</span>
+    </div>
+
     <div class="chips">
       <button class="chip" type="button" data-example="Streetlights in our area are not working.">Streetlights</button>
       <button class="chip" type="button" data-example="Garbage is piling up near our local market.">Waste management</button>
@@ -368,6 +399,120 @@ const input = document.getElementById("problem");
 const result = document.getElementById("result");
 const submit = document.getElementById("submit");
 
+const voiceInput = document.getElementById("voiceInput");
+const voiceLanguage = document.getElementById("voiceLanguage");
+const voiceStatus = document.getElementById("voiceStatus");
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isListening = false;
+let textBeforeListening = "";
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  voiceInput.addEventListener("click", () => {
+    if (isListening) {
+      recognition.stop();
+      return;
+    }
+    textBeforeListening = input.value.trim();
+    recognition.lang = voiceLanguage.value;
+    try {
+      recognition.start();
+    } catch (error) {
+      voiceStatus.textContent = "Could not start microphone. Try again.";
+      console.error("Speech recognition start error:", error);
+    }
+  });
+
+  recognition.onstart = () => {
+    isListening = true;
+    voiceInput.classList.add("recording");
+    voiceInput.textContent = "⏹ Stop listening";
+    voiceStatus.textContent = "Listening… speak now.";
+  };
+
+  recognition.onresult = (event) => {
+    let finalText = "";
+    let interimText = "";
+    for (let i = 0; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) finalText += transcript + " ";
+      else interimText += transcript;
+    }
+    input.value = [textBeforeListening, finalText.trim(), interimText.trim()]
+      .filter(Boolean).join(" ").slice(0, 2000);
+  };
+
+  recognition.onerror = (event) => {
+    const messages = {
+      "not-allowed": "Microphone permission denied. Allow microphone access in browser settings.",
+      "no-speech": "No speech detected. Try again.",
+      "network": "Speech recognition needs a network connection in this browser.",
+      "audio-capture": "No microphone found. Check your device."
+    };
+    voiceStatus.textContent = messages[event.error] || `Voice input error: ${event.error}`;
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    voiceInput.classList.remove("recording");
+    voiceInput.textContent = "🎤 Speak to type";
+    if (!voiceStatus.textContent.startsWith("Microphone permission denied") &&
+        !voiceStatus.textContent.startsWith("No speech detected") &&
+        !voiceStatus.textContent.startsWith("Voice input error") &&
+        !voiceStatus.textContent.startsWith("Speech recognition needs") &&
+        !voiceStatus.textContent.startsWith("No microphone")) {
+      voiceStatus.textContent = input.value.trim()
+        ? "Voice captured. Review the text, then generate your plan."
+        : "Ready for voice input.";
+    }
+  };
+} else {
+  voiceInput.disabled = true;
+  voiceStatus.textContent = "Speech recognition is not supported in this browser. Try Chrome or another supported browser.";
+}
+
+function speakText(text, button) {
+  if (!("speechSynthesis" in window)) {
+    voiceStatus.textContent = "Text-to-speech is not supported by this browser.";
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  const containsBangla = /[\u0980-\u09FF]/.test(text);
+  utterance.lang = containsBangla ? "bn-BD" : voiceLanguage.value;
+  const voices = window.speechSynthesis.getVoices();
+  const desiredLang = containsBangla ? "bn" : utterance.lang.slice(0, 2);
+  const voice = voices.find(v => v.lang.toLowerCase().startsWith(desiredLang));
+  if (voice) utterance.voice = voice;
+  utterance.rate = 1;
+  utterance.onstart = () => {
+    if (button) {
+      button.disabled = true;
+      button.textContent = "🔊 Speaking…";
+    }
+    voiceStatus.textContent = "Reading AI response aloud.";
+  };
+  utterance.onend = () => {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "🔊 Listen again";
+    }
+    voiceStatus.textContent = "Finished reading response.";
+  };
+  utterance.onerror = (event) => {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "🔊 Try again";
+    }
+    voiceStatus.textContent = "Speech playback failed: " + event.error;
+  };
+}
+
 document.querySelectorAll("[data-example]").forEach(button => {
   button.addEventListener("click", () => {
     input.value = button.dataset.example;
@@ -377,6 +522,8 @@ document.querySelectorAll("[data-example]").forEach(button => {
 
 document.getElementById("newChat").addEventListener("click", () => {
   input.value = "";
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  if (recognition && isListening) recognition.stop();
   result.style.display = "none";
   result.replaceChildren();
   input.focus();
@@ -561,6 +708,11 @@ function renderPlan(answer) {
     ).join("")
     : `<div class="action"><span class="num">1</span><p>${escapeHTML(assessment)}</p></div>`;
 
+  const voiceActions = `<div class="result-actions">
+      <button class="btn voice-listen-btn" id="listenAnswer" type="button">🔊 Listen to answer</button>
+      <span class="hint">Uses your browser's built-in speech voice; no voice API key needed.</span>
+    </div>`;
+
   const avoidHTML = avoid.length
     ? avoid.map(item => `<li>${escapeHTML(item)}</li>`).join("")
     : "<li>Avoid actions that could put residents at risk. Follow verified local safety guidance.</li>";
@@ -612,6 +764,7 @@ function renderPlan(answer) {
       <button type="button" data-follow="How can residents report this issue responsibly?">How to report</button>
     </div>
 
+    ${voiceActions}
     <div class="result-actions">
       <button class="btn" id="copyPlan" type="button">Copy plan</button>
       <button class="btn" id="printPlan" type="button">Print / save as PDF</button>
@@ -619,6 +772,10 @@ function renderPlan(answer) {
   `;
 
   result.style.display = "block";
+
+  document.getElementById("listenAnswer").addEventListener("click", (event) => {
+    speakText(fullAnswer, event.currentTarget);
+  });
 
   document.getElementById("copyPlan").addEventListener("click", async () => {
     try {
