@@ -477,19 +477,33 @@ if (SpeechRecognition) {
 }
 
 function speakText(text, button) {
-  if (!("speechSynthesis" in window)) {
+  if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
     voiceStatus.textContent = "Text-to-speech is not supported by this browser.";
     return;
   }
-  window.speechSynthesis.cancel();
+
+  const synthesis = window.speechSynthesis;
+  synthesis.cancel();
+
+  const containsBangla = /[\\u0980-\\u09FF]/.test(text);
   const utterance = new SpeechSynthesisUtterance(text);
-  const containsBangla = /[\u0980-\u09FF]/.test(text);
   utterance.lang = containsBangla ? "bn-BD" : voiceLanguage.value;
-  const voices = window.speechSynthesis.getVoices();
-  const desiredLang = containsBangla ? "bn" : utterance.lang.slice(0, 2);
-  const voice = voices.find(v => v.lang.toLowerCase().startsWith(desiredLang));
-  if (voice) utterance.voice = voice;
-  utterance.rate = 1;
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
+
+  const selectVoice = () => {
+    const voices = synthesis.getVoices();
+    const desiredLang = containsBangla ? "bn" : utterance.lang.slice(0, 2).toLowerCase();
+    const matchingVoice = voices.find(v => v.lang.toLowerCase().startsWith(desiredLang));
+    if (matchingVoice) utterance.voice = matchingVoice;
+  };
+
+  selectVoice();
+
+  if (typeof synthesis.addEventListener === "function") {
+    synthesis.addEventListener("voiceschanged", selectVoice, { once: true });
+  }
+
   utterance.onstart = () => {
     if (button) {
       button.disabled = true;
@@ -497,6 +511,7 @@ function speakText(text, button) {
     }
     voiceStatus.textContent = "Reading AI response aloud.";
   };
+
   utterance.onend = () => {
     if (button) {
       button.disabled = false;
@@ -504,13 +519,26 @@ function speakText(text, button) {
     }
     voiceStatus.textContent = "Finished reading response.";
   };
+
   utterance.onerror = (event) => {
     if (button) {
       button.disabled = false;
       button.textContent = "🔊 Try again";
     }
-    voiceStatus.textContent = "Speech playback failed: " + event.error;
+    voiceStatus.textContent = "Speech playback failed: " + event.error +
+      ". Check that your device has a compatible voice installed.";
   };
+
+  try {
+    // This call was missing previously, so the button never started speech.
+    synthesis.speak(utterance);
+  } catch (error) {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "🔊 Try again";
+    }
+    voiceStatus.textContent = "Could not start speech: " + error.message;
+  }
 }
 
 document.querySelectorAll("[data-example]").forEach(button => {
