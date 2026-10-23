@@ -677,23 +677,23 @@ function parsePlan(text) {
 
     const lower = clean.toLowerCase();
 
-    if (/problem categor|^category\b/.test(lower)) {
+    if (/problem categor|^category\b|সমস্যার ধরন|সমস্যার শ্রেণি|সমস্যার ক্যাটাগরি/.test(lower)) {
       current = "category";
       continue;
     }
-    if (/short assessment|^assessment\b|risk assessment/.test(lower)) {
+    if (/short assessment|^assessment\b|risk assessment|সংক্ষিপ্ত মূল্যায়ন|সংক্ষিপ্ত মূল্যায়ন|ঝুঁকি মূল্যায়ন|ঝুঁকি মূল্যায়ন/.test(lower)) {
       current = "assessment";
       continue;
     }
-    if (/prioritized action|action steps|what to do|recommended actions/.test(lower)) {
+    if (/prioritized action|action steps|what to do|recommended actions|অগ্রাধিকারভিত্তিক করণীয়|অগ্রাধিকারভিত্তিক করণীয়|করণীয় পদক্ষেপ|করণীয় পদক্ষেপ|যা করতে হবে/.test(lower)) {
       current = "actions";
       continue;
     }
-    if (/what residents should avoid|what to avoid|^do not\b|^avoid\b/.test(lower)) {
+    if (/what residents should avoid|what to avoid|^do not\b|^avoid\b|যা এড়িয়ে চলবেন|যা এড়িয়ে চলবেন|যা করা উচিত নয়|যা করা উচিত নয়/.test(lower)) {
       current = "avoid";
       continue;
     }
-    if (/when to contact|emergency contact|contact local authority/.test(lower)) {
+    if (/when to contact|emergency contact|contact local authority|কখন স্থানীয় কর্তৃপক্ষের সঙ্গে যোগাযোগ করবেন|কখন স্থানীয় কর্তৃপক্ষের সঙ্গে যোগাযোগ করবেন|কখন যোগাযোগ করবেন/.test(lower)) {
       current = "contacts";
       continue;
     }
