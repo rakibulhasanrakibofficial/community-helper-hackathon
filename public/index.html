@@ -485,7 +485,7 @@ function speakText(text, button) {
   const synthesis = window.speechSynthesis;
   synthesis.cancel();
 
-  const containsBangla = /[\\u0980-\\u09FF]/.test(text);
+  const containsBangla = Array.from(text).some(char => char.codePointAt(0) >= 0x0980 && char.codePointAt(0) <= 0x09FF);
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = containsBangla ? "bn-BD" : voiceLanguage.value;
   utterance.rate = 0.95;
