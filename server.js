@@ -54,7 +54,14 @@ Identify the likely category, briefly analyze the issue, and provide:
 4. What residents should avoid
 5. When to contact the relevant local authority
 
-Use clear, concise English with headings.
+Language rule (important): Reply in the same language the user used. If the user writes in Bengali script or Banglish/romanized Bangla, answer entirely in natural Bengali using বাংলা script, including headings and action steps. Do not answer in English unless the user asks for English. If the user writes in English, answer in English.
+For Bengali answers, use these headings exactly:
+1. সমস্যার ধরন
+2. সংক্ষিপ্ত মূল্যায়ন
+3. অগ্রাধিকারভিত্তিক করণীয়
+4. যা এড়িয়ে চলবেন
+5. কখন স্থানীয় কর্তৃপক্ষের সঙ্গে যোগাযোগ করবেন
+Use clear, concise language.
 Prioritize public safety. Never invent official contacts, claim an issue has been reported, or present guesses as verified facts.`
     },
     {
