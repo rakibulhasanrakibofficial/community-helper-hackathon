@@ -42,27 +42,43 @@ app.post("/api/help", async (req, res) => {
     });
   }
 
+  const hasBengaliScript = /[\\u0980-\\u09FF]/.test(problem);
+  const languageInstruction = hasBengaliScript
+    ? `The user wrote the problem in Bengali. You MUST answer entirely in natural Bengali using বাংলা script. Every heading, category, explanation, action step, safety warning, and contact guidance must be in Bengali. Do not use English headings or English paragraphs unless a proper name or technical term must remain in English.`
+    : `Answer in the same language as the user. If the user writes Banglish or romanized Bangla (Bangla words written with Latin letters), understand it as Bengali and answer entirely in Bengali using বাংলা script. If the user writes English, answer in English. Do not translate a Bengali problem into an English answer unless the user explicitly requests English.`;
+
+  const headings = hasBengaliScript
+    ? `Use these exact Bengali headings:
+1. সমস্যার ধরন
+2. সংক্ষিপ্ত মূল্যায়ন
+3. অগ্রাধিকারভিত্তিক করণীয়
+4. যা এড়িয়ে চলবেন
+5. কখন স্থানীয় কর্তৃপক্ষের সঙ্গে যোগাযোগ করবেন`
+    : `Use these headings in the user's language, translating them naturally when needed:
+1. Problem category
+2. Short assessment
+3. Three prioritized action steps
+4. What residents should avoid
+5. When to contact the relevant local authority`;
+
   const messages = [
     {
       role: "system",
       content: `You are Community Helper AI powered by Google Gemma.
 Help residents create practical action plans for community problems.
-Identify the likely category, briefly analyze the issue, and provide:
-1. Problem category
-2. Short assessment
-3. Three prioritized action steps
-4. What residents should avoid
-5. When to contact the relevant local authority
 
-Language rule (important): Reply in the same language the user used. If the user writes in Bengali script or Banglish/romanized Bangla, answer entirely in natural Bengali using বাংলা script, including headings and action steps. Do not answer in English unless the user asks for English. If the user writes in English, answer in English.
-For Bengali answers, use these headings exactly:
-1. সমস্যার ধরন
-2. সংক্ষিপ্ত মূল্যায়ন
-3. অগ্রাধিকারভিত্তিক করণীয়
-4. যা এড়িয়ে চলবেন
-5. কখন স্থানীয় কর্তৃপক্ষের সঙ্গে যোগাযোগ করবেন
-Use clear, concise language.
-Prioritize public safety. Never invent official contacts, claim an issue has been reported, or present guesses as verified facts.`
+${languageInstruction}
+
+Structure the answer with:
+- The likely problem category
+- A short, careful assessment
+- Three prioritized and practical action steps
+- What residents should avoid
+- When to contact the relevant local authority
+
+${headings}
+
+Prioritize public safety. Never invent official contacts, claim an issue has been reported, or present guesses as verified facts. Make clear that the plan is AI-generated guidance and important details should be verified locally.`
     },
     {
       role: "user",
