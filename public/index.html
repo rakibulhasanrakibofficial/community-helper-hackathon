@@ -723,11 +723,76 @@ function renderPlan(answer) {
   const avoid = cleanItems(sections.avoid);
   const contacts = cleanItems(sections.contacts);
   const fullAnswer = String(answer).trim();
+  const isBengali = Array.from(fullAnswer).some(char => {
+    const codePoint = char.codePointAt(0);
+    return codePoint >= 0x0980 && codePoint <= 0x09FF;
+  });
+  const ui = isBengali ? {
+    issueCategory: "সমস্যার ধরন",
+    assessment: "মূল্যায়ন",
+    provider: "AI মডেল",
+    nextStep: "পরবর্তী করণীয়",
+    nextSafety: "নিরাপত্তাকে অগ্রাধিকার দিন",
+    nextReview: "করণীয় পরিকল্পনা পর্যালোচনা করুন",
+    riskHigh: "উচ্চ ঝুঁকির আশঙ্কা",
+    riskLow: "কম ঝুঁকির আশঙ্কা",
+    riskReview: "পর্যালোচনা প্রয়োজন",
+    riskTitleHigh: "নিরাপত্তা সংক্রান্ত জরুরি বিষয়",
+    riskTitle: "সমস্যা সমাধানের পরিকল্পনা",
+    aiNotice: "এটি AI-তৈরি পরামর্শ, যাচাইকৃত ঝুঁকি-স্কোর বা সরাসরি সেন্সর তথ্য নয়। গুরুত্বপূর্ণ তথ্য স্থানীয়ভাবে যাচাই করুন।",
+    whatToDo: "করণীয়",
+    actionPlan: "প্রস্তাবিত করণীয় পরিকল্পনা",
+    doNot: "যা এড়িয়ে চলবেন",
+    contactTitle: "কখন স্থানীয় কর্তৃপক্ষের সঙ্গে যোগাযোগ করবেন",
+    emergency: "তাৎক্ষণিক বিপদ থাকলে এখনই স্থানীয় জরুরি সেবার সঙ্গে যোগাযোগ করুন।",
+    fallbackAvoid: "ঝুঁকি তৈরি করতে পারে এমন কাজ এড়িয়ে চলুন এবং যাচাইকৃত নিরাপত্তা নির্দেশনা অনুসরণ করুন।",
+    fallbackContact: "সংশ্লিষ্ট স্থানীয় কর্তৃপক্ষের সঙ্গে যোগাযোগ করুন। অফিসিয়াল যোগাযোগের তথ্য নিজে যাচাই করুন।",
+    fullAnalysis: "সম্পূর্ণ বিশ্লেষণ দেখুন",
+    prioritize: "করণীয়গুলো অগ্রাধিকার দিন",
+    safety: "নিরাপত্তা সতর্কতা",
+    report: "কীভাবে রিপোর্ট করবেন",
+    listen: "🔊 উত্তর শুনুন",
+    listenHint: "ব্রাউজারের built-in voice ব্যবহার হয়; API key লাগবে না।",
+    copy: "পরিকল্পনা কপি করুন",
+    print: "প্রিন্ট / PDF সংরক্ষণ",
+    copied: "কপি হয়েছে!",
+    copyUnavailable: "কপি করা যায়নি"
+  } : {
+    issueCategory: "Issue category",
+    assessment: "Assessment",
+    provider: "AI provider",
+    nextStep: "Next step",
+    nextSafety: "Prioritize safety",
+    nextReview: "Review action plan",
+    riskHigh: "High concern",
+    riskLow: "Lower concern",
+    riskReview: "Needs review",
+    riskTitleHigh: "Priority safety concern",
+    riskTitle: "Community action assessment",
+    aiNotice: "This is an AI-generated text assessment, not a verified risk score or live sensor reading.",
+    whatToDo: "What to do",
+    actionPlan: "Recommended action plan",
+    doNot: "Do not",
+    contactTitle: "When to contact local authority",
+    emergency: "If there is immediate danger, contact local emergency services now.",
+    fallbackAvoid: "Avoid actions that could put residents at risk. Follow verified local safety guidance.",
+    fallbackContact: ui.fallbackContact,
+    fullAnalysis: "See full analysis",
+    prioritize: "Prioritize actions",
+    safety: "Safety precautions",
+    report: "How to report",
+    listen: "🔊 Listen to answer",
+    listenHint: "Uses your browser's built-in speech voice; no voice API key needed.",
+    copy: "Copy plan",
+    print: "Print / save as PDF",
+    copied: "Copied!",
+    copyUnavailable: "Copy unavailable"
+  };
 
   const all = (category + " " + assessment + " " + fullAnswer).toLowerCase();
-  const high = /immediate danger|life-threatening|electrocution|active fire|gas leak|severe flooding|serious injury|urgent emergency/.test(all);
-  const low = /minor issue|low risk|routine maintenance|non-urgent/.test(all);
-  const label = high ? "High concern" : low ? "Lower concern" : "Needs review";
+  const high = /immediate danger|life-threatening|electrocution|active fire|gas leak|severe flooding|serious injury|urgent emergency|তাৎক্ষণিক বিপদ|জীবন-ঝুঁকি|জরুরি বিপদ|বৈদ্যুতিক শক|গ্যাস লিক|ভয়াবহ বন্যা|গুরুতর আঘাত/.test(all);
+  const low = /minor issue|low risk|routine maintenance|non-urgent|কম ঝুঁকি|সামান্য সমস্যা|জরুরি নয়|জরুরি নয়/.test(all);
+  const label = high ? ui.riskHigh : low ? ui.riskLow : ui.riskReview;
   const riskClass = high ? "high" : low ? "low" : "";
 
   const actionHTML = actions.length
@@ -737,13 +802,13 @@ function renderPlan(answer) {
     : `<div class="action"><span class="num">1</span><p>${escapeHTML(assessment)}</p></div>`;
 
   const voiceActions = `<div class="result-actions">
-      <button class="btn voice-listen-btn" id="listenAnswer" type="button">🔊 Listen to answer</button>
-      <span class="hint">Uses your browser's built-in speech voice; no voice API key needed.</span>
+      <button class="btn voice-listen-btn" id="listenAnswer" type="button">${escapeHTML(ui.listen)}</button>
+      <span class="hint">${escapeHTML(ui.listenHint)}</span>
     </div>`;
 
   const avoidHTML = avoid.length
     ? avoid.map(item => `<li>${escapeHTML(item)}</li>`).join("")
-    : "<li>Avoid actions that could put residents at risk. Follow verified local safety guidance.</li>";
+    : `<li>${escapeHTML(ui.fallbackAvoid)}</li>`;
 
   const contactText = contacts.length
     ? contacts.join(" ")
@@ -751,51 +816,51 @@ function renderPlan(answer) {
 
   result.innerHTML = `
     <div class="grid">
-      <div class="metric"><small>Issue category</small><strong>${escapeHTML(category.slice(0,120))}</strong></div>
-      <div class="metric"><small>Assessment</small><strong>${escapeHTML(label)}</strong></div>
-      <div class="metric"><small>AI provider</small><strong>Gemma Cloud</strong></div>
-      <div class="metric"><small>Next step</small><strong>${high ? "Prioritize safety" : "Review action plan"}</strong></div>
+      <div class="metric"><small>${escapeHTML(ui.issueCategory)}</small><strong>${escapeHTML(category.slice(0,120))}</strong></div>
+      <div class="metric"><small>${escapeHTML(ui.assessment)}</small><strong>${escapeHTML(label)}</strong></div>
+      <div class="metric"><small>${escapeHTML(ui.provider)}</small><strong>Gemma Cloud</strong></div>
+      <div class="metric"><small>${escapeHTML(ui.nextStep)}</small><strong>${high ? ui.nextSafety : ui.nextReview}</strong></div>
     </div>
 
     <div class="risk ${riskClass}">
       <span class="badge ${riskClass}">${escapeHTML(label)}</span>
-      <h2>${high ? "Priority safety concern" : "Community action assessment"}</h2>
+      <h2>${high ? ui.riskTitleHigh : ui.riskTitle}</h2>
       <p>${escapeHTML(assessment)}</p>
-      <p class="muted">This is an AI-generated text assessment, not a verified risk score or live sensor reading.</p>
+      <p class="muted">${escapeHTML(ui.aiNotice)}</p>
     </div>
 
     <section class="section">
-      <div class="section-title">What to do</div>
-      <h3>Recommended action plan</h3>
+      <div class="section-title">${escapeHTML(ui.whatToDo)}</div>
+      <h3>${escapeHTML(ui.actionPlan)}</h3>
       ${actionHTML}
     </section>
 
     <section class="section warning">
-      <h3>Do not</h3>
+      <h3>${escapeHTML(ui.doNot)}</h3>
       <ul>${avoidHTML}</ul>
     </section>
 
     <div class="contact">
-      <strong>When to contact local authority</strong>
+      <strong>${escapeHTML(ui.contactTitle)}</strong>
       <p>${escapeHTML(contactText)}</p>
-      ${high ? "<p><strong>If there is immediate danger, contact local emergency services now.</strong></p>" : ""}
+      ${high ? "<p><strong>${escapeHTML(ui.emergency)}</strong></p>" : ""}
     </div>
 
     <details>
-      <summary>See full analysis</summary>
+      <summary>${escapeHTML(ui.fullAnalysis)}</summary>
       <div class="analysis-content">${formatAnalysis(fullAnswer)}</div>
     </details>
 
     <div class="followups">
-      <button type="button" data-follow="Help me prioritize the next steps.">Prioritize actions</button>
-      <button type="button" data-follow="What safety precautions should residents take?">Safety precautions</button>
-      <button type="button" data-follow="How can residents report this issue responsibly?">How to report</button>
+      <button type="button" data-follow="Help me prioritize the next steps.">${escapeHTML(ui.prioritize)}</button>
+      <button type="button" data-follow="What safety precautions should residents take?">${escapeHTML(ui.safety)}</button>
+      <button type="button" data-follow="How can residents report this issue responsibly?">${escapeHTML(ui.report)}</button>
     </div>
 
     ${voiceActions}
     <div class="result-actions">
-      <button class="btn" id="copyPlan" type="button">Copy plan</button>
-      <button class="btn" id="printPlan" type="button">Print / save as PDF</button>
+      <button class="btn" id="copyPlan" type="button">${escapeHTML(ui.copy)}</button>
+      <button class="btn" id="printPlan" type="button">${escapeHTML(ui.print)}</button>
     </div>
   `;
 
@@ -808,9 +873,9 @@ function renderPlan(answer) {
   document.getElementById("copyPlan").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(fullAnswer);
-      document.getElementById("copyPlan").textContent = "Copied!";
+      document.getElementById("copyPlan").textContent = ui.copied;
     } catch {
-      document.getElementById("copyPlan").textContent = "Copy unavailable";
+      document.getElementById("copyPlan").textContent = ui.copyUnavailable;
     }
   });
 
