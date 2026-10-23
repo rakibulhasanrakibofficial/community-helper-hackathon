@@ -42,7 +42,10 @@ app.post("/api/help", async (req, res) => {
     });
   }
 
-  const hasBengaliScript = /[\\u0980-\\u09FF]/.test(problem);
+  const hasBengaliScript = Array.from(problem).some(char => {
+    const codePoint = char.codePointAt(0);
+    return codePoint >= 0x0980 && codePoint <= 0x09FF;
+  });
   const languageInstruction = hasBengaliScript
     ? `The user wrote the problem in Bengali. You MUST answer entirely in natural Bengali using বাংলা script. Every heading, category, explanation, action step, safety warning, and contact guidance must be in Bengali. Do not use English headings or English paragraphs unless a proper name or technical term must remain in English.`
     : `Answer in the same language as the user. If the user writes Banglish or romanized Bangla (Bangla words written with Latin letters), understand it as Bengali and answer entirely in Bengali using বাংলা script. If the user writes English, answer in English. Do not translate a Bengali problem into an English answer unless the user explicitly requests English.`;
