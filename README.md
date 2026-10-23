@@ -15,9 +15,11 @@ This project was developed as a practice hackathon project.
 - AI-generated problem categorization and analysis
 - Three practical action steps
 - Guidance on relevant authorities or organizations to contact
-- Streaming AI responses
+- AI-generated community action plans via Ollama Cloud
+- Voice-to-text input using browser Speech Recognition (English and Bengali selection)
+- Text-to-voice playback using the browser's built-in Speech Synthesis API
+- No ElevenLabs subscription or voice API key required
 - Input validation and error handling
-- Local inference through Ollama
 
 ## 3. Technology Stack
 
@@ -30,9 +32,9 @@ This project was developed as a practice hackathon project.
 - Node.js
 - Express.js
 
-**AI**
-- Ollama
-- Configured model tag: `gemma4:e2b`
+**AI and voice**
+- Ollama Cloud (configured model tag defaults to `gemma4:cloud`)
+- Web Speech API for browser speech recognition and synthesis
 
 **Version Control**
 - Git
@@ -50,8 +52,8 @@ Any additional template or starter-kit usage should be documented here if applic
 
 - Node.js 18 or later
 - npm
-- Ollama
-- The configured model available in Ollama
+- An Ollama Cloud API key for the hosted AI endpoint
+- A modern browser with Web Speech API support for voice features
 
 ### Clone the repository
 
@@ -66,21 +68,11 @@ cd community-helper-hackathon
 npm install
 ```
 
-### Prepare the model
+### Configure hosted AI
 
-Make sure Ollama is installed and running. If the configured model is available in your Ollama installation, download it with:
+Set `OLLAMA_API_KEY` in your deployment provider's environment settings. Optionally set `OLLAMA_MODEL`; by default the server uses `gemma4:cloud`. Never commit the real API key or put it in frontend JavaScript.
 
-```bash
-ollama pull gemma4:e2b
-```
-
-Verify installed models:
-
-```bash
-ollama list
-```
-
-The exact model version and availability should be verified in the local environment.
+Voice features use browser APIs and do not need a separate voice API key. Speech recognition support varies by browser. Use HTTPS in production and grant microphone permission when prompted.
 
 ### Run the application
 
@@ -88,9 +80,7 @@ The exact model version and availability should be verified in the local environ
 npm start
 ```
 
-Open the application at:
-
-http://localhost:5000
+Open the application at the port shown in your terminal, or `http://localhost:5000` when `PORT=5000` is configured.
 
 Optional environment variables and their defaults are documented in `.env.example`.
 
@@ -102,7 +92,7 @@ Returns the application's status and configured model information.
 
 ### `POST /api/help`
 
-Accepts a JSON request containing a community problem and streams the AI-generated response as plain text.
+Accepts a JSON request containing a community problem and returns a JSON response containing the generated answer.
 
 Example request:
 
@@ -121,7 +111,7 @@ The response is intended to include a category, brief analysis, action steps, an
 - **Configured model tag:** `gemma4:e2b`
 - **Model family:** Gemma
 - **Model version and size:** Must be verified against the exact model installed in Ollama; not independently confirmed in this README.
-- **Inference location:** Local Ollama instance by default, at `http://127.0.0.1:11434`.
+- **Inference location:** Ollama Cloud, using the hosted API endpoint in `server.js`.
 - **Purpose:** Generates suggested community-problem categories, analyses, action plans, and contact guidance.
 
 Consult the model publisher's documentation for the exact model release, license, and applicable usage terms.
@@ -154,7 +144,8 @@ This project is licensed under the MIT License. See the `LICENSE` file in this r
 
 ## 10. Limitations
 
-- The default AI configuration requires a running local Ollama instance.
 - AI-generated plans are suggestions and are not verified official advice.
-- Public deployment requires a compatible inference setup.
+- Voice input depends on browser speech recognition support and HTTPS/secure-context access.
+- Browser text-to-speech voices and Bengali voice availability depend on the user's operating system and browser.
+- Public deployment requires an `OLLAMA_API_KEY` environment variable for hosted inference.
 - Model availability depends on the exact model tag and local environment.
