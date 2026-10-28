@@ -296,3 +296,65 @@ body {
 @media print {
   body, .app-shell { background: #fff !important; color: #111 !important; }
 }
+
+
+/* Final responsive and control fixes: preserve the original navy/cyan/mint theme. */
+*, *::before, *::after { min-width: 0; }
+html, body, #root { width: 100%; max-width: 100%; }
+body { overflow-x: clip; }
+.app-shell { width: 100%; max-width: 100%; overflow-x: clip; }
+.page-content { width: 100%; min-width: 0; }
+.request-card, .request-card form, .request-heading, .request-tools,
+.voice-tools, .example-row, .results-wrap, .result-toolbar { min-width: 0; max-width: 100%; }
+.request-heading > div:first-child { min-width: 0; }
+.request-heading h2, .request-heading p { overflow-wrap: anywhere; }
+#problem { display: block; width: 100%; max-width: 100%; min-width: 0; }
+.input-meta { background: transparent; color: #91b1c1; }
+.voice-status { background: transparent; color: #91b1c1; overflow-wrap: anywhere; }
+.example-row > span { background: transparent; color: #91b1c1; }
+.privacy-note { background: transparent; color: #91b1c1; }
+.button-quiet { background: #102a37; color: #eef7fc; border: 1px solid #244554; }
+.button-outline { background: #102a37; color: #eef7fc; border: 1px solid #244554; }
+.button-outline:hover { background: #123744; border-color: #35c5d5; }
+.button-outline.recording { background: #3b2029; border-color: #ff6969; color: #fff; }
+.language-select { max-width: 100%; background: #0d1c29; color: #eef7fc; border: 1px solid #345164; border-radius: 10px; }
+.example-chip { background: #203849; color: #e4f5ff; border-color: #36566a; }
+.example-chip span { color: #35c5d5; }
+.example-chip:hover, .example-chip.selected { background: #123744; border-color: #35c5d5; color: #eef7fc; }
+.result-metric, .result-card, .step-card { background: #102a37; color: #eef7fc; }
+.button-primary, .button-submit { background: #61e5b5; color: #08251d; }
+.button-primary:hover, .button-submit:hover { background: #7af0c5; }
+.button-dark { background: #35c5d5; color: #05212a; }
+.button-dark:hover { background: #61e5b5; }
+@media (max-width: 680px) {
+  .request-tools { align-items: stretch; }
+  .voice-tools { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .voice-tools .button-outline, .voice-tools .language-select { width: 100%; min-width: 0; max-width: 100%; }
+  .request-heading .step-bubble { flex-shrink: 0; }
+  .input-meta { align-items: flex-start; }
+  .input-meta span { max-width: 100%; overflow-wrap: anywhere; }
+  .example-row { display: flex; }
+  .example-chip { max-width: 100%; white-space: normal; text-align: left; }
+}
+@media (max-width: 380px) {
+  .voice-tools { grid-template-columns: minmax(0, 1fr); }
+  .nav-cta { white-space: normal; }
+}
+/* Accessible motion polish: tactile controls, subtle card lift, and animated focus. */
+.button, .example-chip, .follow-up-actions button, .language-select {
+  transition: transform .2s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.button:hover:not(:disabled), .example-chip:hover, .follow-up-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px #0002;
+}
+.button:active:not(:disabled), .example-chip:active, .follow-up-actions button:active {
+  transform: scale(.98);
+}
+.button:focus-visible, .example-chip:focus-visible, .follow-up-actions button:focus-visible {
+  outline: 3px solid #35c5d5;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
