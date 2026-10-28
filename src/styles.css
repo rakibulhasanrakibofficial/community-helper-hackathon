@@ -719,3 +719,45 @@ body { overflow-x: clip; }
 @media(prefers-reduced-motion:reduce) {
   .orbit-one,.orbit-two { animation:none!important; }
 }
+
+
+/* Refined wordmark typography for the Community Helper logo. */
+.brand {
+  font-family: "Manrope", "DM Sans", system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.85px;
+  line-height: 1;
+  gap: 11px;
+  white-space: nowrap;
+  font-feature-settings: "ss01" on, "kern" on;
+}
+.brand > span:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  max-width: none;
+  line-height: 1;
+}
+.brand-light {
+  display: inline;
+  margin-left: 0;
+  font-weight: 600;
+  letter-spacing: -0.95px;
+}
+.brand small {
+  margin-top: 6px;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 2.35px;
+  line-height: 1.2;
+}
+.brand-mark {
+  flex: 0 0 auto;
+  border: 1px solid #6ce5d52b;
+}
+@media(max-width:680px) {
+  .brand { font-size: 16px; letter-spacing: -0.7px; gap: 9px; }
+  .brand small { font-size: 6.5px; letter-spacing: 2.1px; }
+}
