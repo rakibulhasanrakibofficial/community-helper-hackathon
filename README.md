@@ -1,98 +1,81 @@
-# AI Community Helper
+# Community Helper AI
 
-## 1. Project Overview
+Community Helper AI turns a resident's description of a local issue into a practical, safety-aware action plan using a Gemma model through Ollama Cloud.
 
-AI Community Helper is a web application that helps users analyze community problems and generate practical action plans using an open-weight AI model.
+## Features
 
-Users describe an issue in their community and receive a suggested category, a short analysis, three actionable steps, and guidance on which authority or organization may be relevant.
+- Responsive React interface with subtle entrance, hover, scroll-reveal, loading and result animations.
+- Motion for React (imported from `motion/react`) for entrance, hover, scroll-reveal, and state-transition animations.
+- Community issue examples and clear, prioritized action steps.
+- AI response summaries with safety advice and guidance for contacting the appropriate local authority.
+- English and Bengali voice-to-text where the browser supports Speech Recognition.
+- Browser-based text-to-speech playback, without a separate voice API key.
+- Copy and print/save-as-PDF actions.
+- Express endpoint validation and user-friendly error handling.
 
-This project was developed as a practice hackathon project.
+## Technology stack
 
-## 2. Features
+**Frontend:** React, Vite, Motion for React, CSS.
 
-- Responsive web interface
-- Example community problems for quick input
-- AI-generated problem categorization and analysis
-- Three practical action steps
-- Guidance on relevant authorities or organizations to contact
-- AI-generated community action plans via Ollama Cloud
-- Voice-to-text input using browser Speech Recognition (English and Bengali selection)
-- Text-to-voice playback using the browser's built-in Speech Synthesis API
-- No ElevenLabs subscription or voice API key required
-- Input validation and error handling
+**Backend:** Node.js, Express.
 
-## 3. Technology Stack
+**AI and voice:** Ollama Cloud (default configured model tag: `gemma4:cloud`); browser Web Speech APIs for voice input/output.
 
-**Frontend**
-- HTML5
-- CSS3
-- JavaScript
+**Version control:** Git and GitHub.
 
-**Backend**
-- Node.js
-- Express.js
+## Requirements
 
-**AI and voice**
-- Ollama Cloud (configured model tag defaults to `gemma4:cloud`)
-- Web Speech API for browser speech recognition and synthesis
-
-**Version Control**
-- Git
-- GitHub
-
-## 4. Templates and Starter Kits
-
-No third-party application template or starter kit has been declared for this practice project. The application uses standard Node.js and Express dependencies.
-
-Any additional template or starter-kit usage should be documented here if applicable.
-
-## 5. Installation and Setup
-
-### Prerequisites
-
-- Node.js 18 or later
+- Node.js 20.19+ (or a compatible newer Node.js release supported by Vite 7)
 - npm
-- An Ollama Cloud API key for the hosted AI endpoint
-- A modern browser with Web Speech API support for voice features
+- An Ollama Cloud API key
+- A modern browser; microphone input requires browser support and HTTPS or localhost
 
-### Clone the repository
+## Run locally
+
+Clone the project and install dependencies:
 
 ```bash
 git clone https://github.com/rakibulhasanrakibofficial/community-helper-hackathon.git
 cd community-helper-hackathon
-```
-
-### Install dependencies
-
-```bash
 npm install
 ```
 
-### Configure hosted AI
+Create a `.env` file based on `.env.example` and set `OLLAMA_API_KEY`. You may optionally configure `OLLAMA_MODEL`; the backend defaults to `gemma4:cloud`. Never commit a real API key or place it in frontend code.
 
-Set `OLLAMA_API_KEY` in your deployment provider's environment settings. Optionally set `OLLAMA_MODEL`; by default the server uses `gemma4:cloud`. Never commit the real API key or put it in frontend JavaScript.
-
-Voice features use browser APIs and do not need a separate voice API key. Speech recognition support varies by browser. Use HTTPS in production and grant microphone permission when prompted.
-
-### Run the application
+Start both the Express API and Vite development server:
 
 ```bash
+npm run dev
+```
+
+Open the Vite URL displayed in the terminal (usually `http://localhost:5173`). Vite proxies `/api` requests to the Express server on port 3000.
+
+For a production-like local run:
+
+```bash
+npm install
 npm start
 ```
 
-Open the application at the port shown in your terminal, or `http://localhost:5000` when `PORT=5000` is configured.
+The start script builds the frontend and then serves the generated `dist` folder through Express. The listening port defaults to 3000; set `PORT` to override it.
 
-Optional environment variables and their defaults are documented in `.env.example`.
+## Environment variables
 
-## 6. API Endpoints
+| Variable | Required | Description |
+| --- | --- | --- |
+| `OLLAMA_API_KEY` | Yes for AI requests | Ollama Cloud API key. Store it only in server environment variables. |
+| `OLLAMA_MODEL` | No | Model tag; defaults to `gemma4:cloud`. |
+| `PORT` | No | Express listening port; defaults to `3000`. |
+
+## API
 
 ### `GET /api/health`
 
-Returns the application's status and configured model information.
+Returns service status, provider and configured model metadata.
 
 ### `POST /api/help`
 
-Accepts a JSON request containing a community problem and returns a JSON response containing the generated answer.
+Accepts a JSON body with a community issue description (up to 2,000 characters) and returns the AI-generated answer.
 
 Example request:
 
@@ -102,50 +85,23 @@ Example request:
 }
 ```
 
-The response is intended to include a category, brief analysis, action steps, and suggested contact guidance.
+The frontend displays the response as a short overview, suggested actions, precautions, contact guidance and the full AI response. The display parser is a presentation aid, not a verified assessment engine.
 
-## 7. Models and AI Disclosure
+## Deployment
 
-### Open-weight model
+Set the service's build/install step to install dependencies, and its start command to `npm start`. The start script creates `dist` before launching Express. Configure `OLLAMA_API_KEY` in the hosting provider's environment settings. Do not put that value into Vite-prefixed public variables or frontend files.
 
-- **Configured model tag:** `gemma4:e2b`
-- **Model family:** Gemma
-- **Model version and size:** Must be verified against the exact model installed in Ollama; not independently confirmed in this README.
-- **Inference location:** Ollama Cloud, using the hosted API endpoint in `server.js`.
-- **Purpose:** Generates suggested community-problem categories, analyses, action plans, and contact guidance.
+**Deployment status:** The live deployment URL has not been verified and is intentionally not claimed here.
 
-Consult the model publisher's documentation for the exact model release, license, and applicable usage terms.
+## AI disclosure and limitations
 
-### Proprietary models
+- Plans are AI-generated suggestions; they are not official instructions, verified reports, live sensor readings or validated risk scores.
+- Never assume an issue has been reported because the app generated a plan.
+- Verify important details and official contact information locally.
+- Contact local emergency services directly in an immediate-danger situation.
+- Speech recognition and Bengali voice availability depend on the browser, operating system, installed voices and secure-context permissions.
+- This project uses the hosted Ollama Cloud API, not a local Ollama instance on the developer's machine.
 
-No proprietary model is configured as the application's core inference model in the current local setup.
+## License
 
-### AI coding assistance
-
-ChatGPT was used during practice development to assist with implementation and documentation. Generated code was reviewed and tested as part of the development process. The developer should understand and be able to explain the submitted code.
-
-AI-generated suggestions may be incorrect, incomplete, or unsuitable for a particular location. Verify important recommendations independently. Do not treat generated contact guidance as verified official information.
-
-## 8. Deployment
-
-**Deployment status:** Pending verification.
-
-The current configuration expects Ollama to run locally on the same machine as the backend. A publicly hosted backend cannot access the developer's computer through `127.0.0.1`.
-
-For public deployment, the application must be configured to use a compatible hosted inference provider that supports the required open-weight model, or the permitted local-demo approach must be used and documented accurately.
-
-The final public HTTPS deployment URL will be added here after deployment and testing:
-
-`Deployment URL: Pending`
-
-## 9. License
-
-This project is licensed under the MIT License. See the `LICENSE` file in this repository.
-
-## 10. Limitations
-
-- AI-generated plans are suggestions and are not verified official advice.
-- Voice input depends on browser speech recognition support and HTTPS/secure-context access.
-- Browser text-to-speech voices and Bengali voice availability depend on the user's operating system and browser.
-- Public deployment requires an `OLLAMA_API_KEY` environment variable for hosted inference.
-- Model availability depends on the exact model tag and local environment.
+MIT. See [LICENSE](LICENSE).

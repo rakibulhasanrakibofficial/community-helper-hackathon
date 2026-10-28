@@ -1,9 +1,27 @@
 {
   "name": "community-helper-hackathon",
-  "version": "1.0.0",
-  "description": "AI-powered community problem helper using a local open-weight model",
+  "version": "1.1.0",
+  "private": true,
+  "description": "AI-powered community problem helper using a hosted Gemma model",
   "main": "server.js",
-  "scripts": {"start": "node server.js"},
+  "scripts": {
+    "start": "npm run build && node server.js",
+    "dev": "concurrently -k \"node server.js\" \"vite --host 0.0.0.0\"",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
   "license": "MIT",
-  "dependencies": {"cors": "^2.8.5", "dotenv": "^16.4.7", "express": "^4.21.2"}
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "motion": "^14.5.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.1",
+    "vite": "^7.1.0"
+  }
 }
