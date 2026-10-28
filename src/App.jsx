@@ -334,7 +334,7 @@ export default function App() {
           <form onSubmit={event => { event.preventDefault(); requestHelp(problem); }}>
             <label className="sr-only" htmlFor="problem">Describe your community problem</label>
             <textarea id="problem" ref={problemRef} value={problem} maxLength={2000} onChange={event => setProblem(event.target.value)} placeholder="For example: the streetlights near our school have not worked for a week…" />
-            <div className="input-meta"><span>{problem.length}/2000 characters</span><span>↳ Please avoid sharing private contact details.</span></div>
+            <div className="input-meta"><span>{problem.length}/2000 characters</span><span>↳ Please avoid sharing private contact details.</span>{problem && <button type="button" className="clear-draft" onClick={() => { setProblem(""); setError(""); problemRef.current?.focus(); }}>Clear draft ×</button>}</div>
             <div className="request-tools">
               <div className="voice-tools"><button type="button" className={`button button-outline ${listening ? "recording" : ""}`} onClick={startVoice}>{listening ? "■ Stop listening" : "♩ Speak to type"}</button><label className="sr-only" htmlFor="voice-language">Voice language</label><select id="voice-language" className="language-select" value={voiceLanguage} onChange={event => setVoiceLanguage(event.target.value)}><option value="en-US">English voice</option><option value="bn-BD">বাংলা voice</option></select></div>
               <span className="voice-status" aria-live="polite">{voiceStatus}</span>
