@@ -191,3 +191,108 @@ h1,h2,h3,p{margin-top:0}
 @media(max-width:380px){.hero-copy h1{font-size:41px}.hero-buttons{align-items:flex-start;flex-direction:column;gap:4px}.hero-visual{transform:scale(.94);margin:-7px -10px}.request-heading{flex-direction:column-reverse}.result-metrics{grid-template-columns:1fr}.voice-tools{width:100%}.language-select{max-width:none}.result-buttons .button-dark{flex:1}.step-bubble{align-self:flex-start}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 @media print{body,.app-shell{background:#fff!important;color:#111!important}.topbar,.hero-section,.request-card,.how-section,.safety-banner,.site-footer,.result-toolbar,.full-answer summary{display:none!important}.page-content{max-width:none;padding:0}.results-wrap{margin:0}.result-card,.result-metric,.full-answer{break-inside:avoid;box-shadow:none;background:#fff!important;color:#111!important;border:1px solid #bbb}.result-heading p,.result-card p,.result-card li,.full-answer-content p{color:#222}.result-grid{gap:8px}.full-answer:not([open]) .full-answer-content{display:block}.full-answer-content{display:block!important}}
+
+
+/* Preserve the original Community Helper dark-teal/cyan visual identity.
+   Motion is additive; it should not replace the project's original palette or typography. */
+:root {
+  font-family: Inter, system-ui, Arial, sans-serif;
+  color-scheme: dark;
+  color: #eef7fc;
+  background: #07151d;
+  --ink: #eef7fc;
+  --muted: #91b1c1;
+  --green: #61e5b5;
+  --deep: #102a37;
+  --line: #244554;
+  --paper: #102a37;
+  --lilac: #203849;
+  --blue: #123744;
+  --peach: #282630;
+}
+body {
+  background: radial-gradient(ellipse at 12% 5%, #102a37 0, transparent 34%),
+              radial-gradient(ellipse at 93% 22%, #0d202b 0, transparent 30%), #07151d;
+  color: #eef7fc;
+  font-family: Inter, system-ui, Arial, sans-serif;
+}
+.topbar { border-color: #244554; }
+.brand-light, .section-kicker, .status-tag, .section-intro h2 span { color: #35c5d5; }
+.brand small, .nav-links, .button-text, .hero-description, .trust-row small,
+.request-heading p, .input-meta, .voice-status, .example-row>span, .privacy-note,
+.result-heading p, .result-card>p, .result-card li, .step-card p, .site-footer>p {
+  color: #91b1c1;
+}
+.status-tag { background: #102a37; border-color: #244554; }
+.status-dot { background: #35c5d5; box-shadow: 0 0 0 4px #35c5d520; }
+.hero-copy h1, .request-heading h2, .result-heading h2, .section-intro h2,
+.step-card h3, .card-heading h3, .safety-banner h2 { color: #eef7fc; }
+.hero-copy h1 span { color: #35c5d5; }
+.button-quiet, .example-chip, .result-metric, .result-card, .step-card,
+.request-card, .loading-card, .full-answer, .result-toolbar {
+  background: #102a37;
+  color: #eef7fc;
+  border-color: #244554;
+}
+.button-quiet { box-shadow: none; }
+.button-primary, .button-submit { background: #35c5d5; color: #05212a; }
+.button-primary span { color: #05212a; }
+.button-primary:hover, .button-submit:hover { background: #61e5b5; }
+.button-text { color: #91b1c1; }
+.play-icon { background: #102a37; color: #35c5d5; border-color: #244554; }
+.avatar-stack span { border-color: #07151d; background: #203849; color: #61e5b5; }
+.avatar-stack span:nth-child(2) { background: #203849; color: #35c5d5; }
+.avatar-stack span:nth-child(3) { background: #282630; color: #f5c66b; }
+.visual-glow { background: radial-gradient(circle, #123744 0, #102a37 42%, #102a3700 73%); }
+.orbit { border-color: #244554; }
+.orbit-two { border-color: #244554; }
+.community-illustration { background: linear-gradient(155deg,#123744,#102a37 57%,#203849); box-shadow: inset 0 -20px 45px #07151d70; }
+.sun-disc { background: #f5c66b; box-shadow: 0 0 0 9px #f5c66b20; }
+.building, .building-a, .building-b, .building-c { background: #267889; box-shadow: inset 0 5px 0 #35c5d5; }
+.building i { background: #d7f7f5; }
+.pathway { background: #244554; }
+.tree { background: #61e5b5; }
+.tree:before { background: #267889; box-shadow: 5px 7px 0 #35c5d5; }
+.float-card { background: #102a37ed; border-color: #244554; box-shadow: 0 12px 34px #0004; }
+.float-card small, .visual-caption { color: #91b1c1; }
+.float-icon.mint, .icon-tile, .action-list li>span { background: #123744; color: #61e5b5; }
+.float-icon.lilac { background: #203849; color: #35c5d5; }
+#problem { background: #0d1c29; border-color: #345164; color: #f4fbff; }
+#problem::placeholder { color: #91b1c1; }
+#problem:focus { border-color: #35c5d5; box-shadow: 0 0 0 4px #35c5d520; }
+.example-chip { color: #e4f5ff; }
+.example-chip span { color: #35c5d5; }
+.example-chip:hover, .example-chip.selected { background: #123744; border-color: #267889; color: #eef7fc; }
+.privacy-note span, .micro-status { color: #61e5b5; }
+.loading-card { background: #102a37; }
+.loading-symbol { background: #123744; color: #35c5d5; }
+.loading-bars i { background: #35c5d5; }
+.result-metric span, .card-heading>div>span, .follow-up-actions>span { color: #91b1c1; }
+.result-metric strong { color: #eef7fc; }
+.result-card { box-shadow: none; }
+.result-card .icon-tile.mint-tile { background: #123744; color: #61e5b5; }
+.result-card .icon-tile.peach-tile { background: #282630; color: #f5c66b; }
+.result-card .icon-tile.blue-tile { background: #203849; color: #35c5d5; }
+.safety-card { background: #102532; border-color: #68454b; }
+.contact-card { background: #102532; border-color: #345164; }
+.full-answer { background: #0c202c; }
+.full-answer summary { color: #35c5d5; }
+.full-answer-content { border-color: #244554; }
+.full-answer-content h4 { color: #61e5b5; }
+.follow-up-actions button { background: #203849; border-color: #36566a; color: #e4f5ff; }
+.follow-up-actions button:hover { background: #123744; border-color: #267889; }
+.result-toolbar { background: #0c202c; }
+.button-dark { background: #35c5d5; color: #05212a; }
+.button-dark:hover { background: #61e5b5; }
+.step-card { background: #102a37; }
+.step-top>span { color: #91b1c1; }
+.safety-banner { background: #102a37; border: 1px solid #244554; }
+.safety-symbol { background: #123744; color: #61e5b5; }
+.safety-banner>div>span { color: #35c5d5; }
+.safety-banner p { color: #b3c9d6; }
+.safety-banner>a { background: #35c5d5; color: #05212a; }
+.site-footer { border-color: #244554; }
+.back-top { color: #91b1c1; }
+@media print {
+  body, .app-shell { background: #fff !important; color: #111 !important; }
+}
