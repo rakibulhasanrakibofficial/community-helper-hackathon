@@ -699,3 +699,23 @@ body { overflow-x: clip; }
 .community-illustration .realistic-orb,
 .community-illustration .visual-particles { display:none !important; }
 .community-illustration { transform-style:flat; }
+
+
+/* True real-time WebGL 3D scene (no photo assets). */
+.real3d-scene {
+  position:relative; z-index:1; width:290px; height:285px; overflow:hidden;
+  border-radius:46% 46% 26% 26%;
+  background:radial-gradient(ellipse at 50% 48%,#16435a 0%,#0b2539 58%,#071827 100%);
+  border:1px solid #73dff027;
+  box-shadow:inset 0 0 45px #35c5d51a,0 18px 55px #0003;
+}
+.real3d-scene canvas { display:block; width:100%; height:100%; }
+.visual-center { display:none; }
+.visual-caption { position:relative; z-index:2; margin-top:12px; text-align:center; }
+.hero-visual .visual-glow { z-index:0; }
+@media(max-width:680px) {
+  .real3d-scene { width:275px; height:260px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .orbit-one,.orbit-two { animation:none!important; }
+}
