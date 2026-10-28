@@ -358,3 +358,17 @@ body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+
+.clear-draft {
+  margin-left: auto;
+  padding: 4px 9px;
+  border: 1px solid #345164;
+  border-radius: 999px;
+  background: #0d1c29;
+  color: #91b1c1;
+  font-size: 11px;
+  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.clear-draft:hover { background: #3b2029; color: #fff; border-color: #ff6969; transform: translateY(-1px); }
+@media (max-width: 680px) { .clear-draft { margin-left: 0; } }
