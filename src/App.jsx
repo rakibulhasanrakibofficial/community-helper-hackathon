@@ -153,6 +153,8 @@ function ResultView({ answer, problem, onFollowUp, onListen, onCopy, onPrint, vo
 
 export default function App() {
   const [problem, setProblem] = useState("");
+  const [savedDraft, setSavedDraft] = useState(() => { try { return window.localStorage.getItem("community-helper-draft") || ""; } catch { return ""; } });
+  const [draftNotice, setDraftNotice] = useState("");
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -209,6 +211,28 @@ export default function App() {
       recognitionRef.current = null;
     };
   }, []);
+
+  const saveDraft = () => {
+    if (!problem.trim()) {
+      setDraftNotice("Write a short description before saving.");
+      return;
+    }
+    try {
+      window.localStorage.setItem("community-helper-draft", problem);
+      setSavedDraft(problem);
+      setDraftNotice("Draft saved on this device only.");
+    } catch {
+      setDraftNotice("Could not save draft in this browser.");
+    }
+  };
+
+  const restoreDraft = () => {
+    if (!savedDraft) return;
+    setProblem(savedDraft);
+    setDraftNotice("Saved draft restored.");
+    setError("");
+    problemRef.current?.focus();
+  };
 
   const reset = () => {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -334,7 +358,7 @@ export default function App() {
           <form onSubmit={event => { event.preventDefault(); requestHelp(problem); }}>
             <label className="sr-only" htmlFor="problem">Describe your community problem</label>
             <textarea id="problem" ref={problemRef} value={problem} maxLength={2000} onChange={event => setProblem(event.target.value)} placeholder="For example: the streetlights near our school have not worked for a week…" />
-            <div className="input-meta"><span>{problem.length}/2000 characters</span><span>↳ Please avoid sharing private contact details.</span>{problem && <button type="button" className="clear-draft" onClick={() => { setProblem(""); setError(""); problemRef.current?.focus(); }}>Clear draft ×</button>}</div>
+            <div className="input-meta"><span>{problem.length}/2000 characters</span><span>↳ Please avoid sharing private contact details.</span><div className="draft-actions">{savedDraft && <button type="button" className="clear-draft restore-draft" onClick={restoreDraft}>Restore saved</button>}{problem && <button type="button" className="clear-draft" onClick={() => { setProblem(""); setError(""); setDraftNotice(""); problemRef.current?.focus(); }}>Clear ×</button>}<button type="button" className="clear-draft save-draft" onClick={saveDraft} disabled={!problem.trim()}>Save draft ↓</button></div></div>{draftNotice && <p className="draft-notice" aria-live="polite">{draftNotice}</p>}
             <div className="request-tools">
               <div className="voice-tools"><button type="button" className={`button button-outline ${listening ? "recording" : ""}`} onClick={startVoice}>{listening ? "■ Stop listening" : "♩ Speak to type"}</button><label className="sr-only" htmlFor="voice-language">Voice language</label><select id="voice-language" className="language-select" value={voiceLanguage} onChange={event => setVoiceLanguage(event.target.value)}><option value="en-US">English voice</option><option value="bn-BD">বাংলা voice</option></select></div>
               <span className="voice-status" aria-live="polite">{voiceStatus}</span>
