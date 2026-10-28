@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef } from "react";
 import * as THREE from "three";
 
 const examples = [
