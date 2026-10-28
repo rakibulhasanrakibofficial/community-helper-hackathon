@@ -204,7 +204,8 @@ export default function App() {
     };
 
     return () => {
-      recognition.stop();
+      // In development StrictMode may clean up before recording ever starts.
+      try { recognition.stop(); } catch { /* Nothing to stop yet. */ }
       recognitionRef.current = null;
     };
   }, []);
