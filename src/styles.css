@@ -783,3 +783,32 @@ body { overflow-x: clip; }
 .hero-visual .float-card strong{color:#e8f7fb}.hero-visual .float-card small{color:#9bb7c2}
 .real3d-scene{width:min(100%,360px);height:330px;border-radius:30px;background:radial-gradient(ellipse at 50% 48%,#16435a 0%,#0b2539 58%,#071827 100%)}
 @media(max-width:680px){.app-shell{background:linear-gradient(180deg,#071827 0%,#0a2032 690px,#f5f8f4 690px,#f5f8f4 100%)}.real3d-scene{width:min(100%,310px);height:285px}}
+
+
+/* Mobile edge/background fix: keep the full page consistently dark navy. */
+html, body, #root { min-height: 100%; background: #071827; }
+body {
+  background:
+    radial-gradient(ellipse at 80% 8%, rgba(22, 113, 139, .2), transparent 34%),
+    radial-gradient(ellipse at 8% 55%, rgba(19, 65, 83, .16), transparent 32%),
+    #071827 !important;
+  color: #eef7fc;
+}
+.app-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 78% 9%, rgba(21, 107, 132, .22), transparent 34%),
+    linear-gradient(180deg, #071827 0%, #0a2032 100%) !important;
+}
+.how-section, .results-wrap { background: transparent; }
+.site-footer { background: transparent; }
+@media (max-width: 680px) {
+  .app-shell {
+    background:
+      radial-gradient(ellipse at 80% 8%, rgba(22, 113, 139, .18), transparent 35%),
+      linear-gradient(180deg, #071827 0%, #0a2032 100%) !important;
+  }
+  .page-content { padding-left: 17px; padding-right: 17px; }
+  .how-section { padding-top: 42px; padding-bottom: 34px; }
+  .site-footer { margin-top: 24px; }
+}
