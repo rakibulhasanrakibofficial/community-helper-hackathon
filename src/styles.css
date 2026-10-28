@@ -667,3 +667,35 @@ body { overflow-x: clip; }
 .orb-cyan { background:radial-gradient(circle at 28% 22%,#f1ffff 0%,#a2f5ff 16%,#39c7e0 48%,#096282 100%); }
 .orb-lilac { background:radial-gradient(circle at 28% 22%,#fff9ff 0%,#e2cfff 16%,#b48bf0 48%,#563d9c 100%); }
 @media(prefers-reduced-motion:reduce){.community-illustration *{scroll-behavior:auto}}
+
+
+/* Replace toy-like hero illustration with an actual photographic streetscape. */
+.community-illustration {
+  background:
+    linear-gradient(180deg, #07182712 0%, #07182735 56%, #071827d9 100%),
+    url("https://unsplash.com/photos/Oxq-a3GosKk/download?force=true") center 48% / cover no-repeat;
+  border: 1px solid #7bd9e72b;
+  border-radius: 22px;
+  box-shadow: 0 22px 60px #0007, inset 0 0 0 1px #ffffff10;
+  overflow: hidden;
+}
+.community-illustration::before {
+  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(120deg,#0b1e31a6 0%,transparent 40%,#0b1e3140 100%);
+  mix-blend-mode:multiply;
+}
+.community-illustration::after {
+  content:"Real neighborhood • Real-world impact";
+  position:absolute; z-index:5; left:12px; right:12px; bottom:10px;
+  color:#f2fbff; font-size:9px; font-weight:650; letter-spacing:.35px;
+  text-shadow:0 1px 6px #000; padding:9px 11px; border-radius:9px;
+  background:linear-gradient(90deg,#071827b8,#07182745);
+  border:1px solid #ffffff20; backdrop-filter:blur(8px);
+}
+.community-illustration .building,
+.community-illustration .sun-disc,
+.community-illustration .pathway,
+.community-illustration .tree,
+.community-illustration .realistic-orb,
+.community-illustration .visual-particles { display:none !important; }
+.community-illustration { transform-style:flat; }
