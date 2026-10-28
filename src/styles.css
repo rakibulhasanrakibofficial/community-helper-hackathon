@@ -513,3 +513,44 @@ body { overflow-x: clip; }
     transition: none !important;
   }
 }
+
+
+/* Motion upgrade III — luminous sweep, animated edge, and tactile micro-interactions. */
+.button-primary, .button-submit { overflow: hidden; isolation: isolate; }
+.button-primary::before, .button-submit::before {
+  content: ""; position: absolute; z-index: -1; top: -70%; left: -45%; width: 32%; height: 240%;
+  transform: rotate(24deg); background: linear-gradient(90deg, transparent, #ffffff9c, transparent);
+  opacity: .72; animation: buttonShine 4.8s ease-in-out infinite; pointer-events: none;
+}
+.button-primary::after, .button-submit::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+  background: linear-gradient(120deg, #ffffff99, transparent 35%, #ffffff60 65%, transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+}
+.button-primary:hover:not(:disabled), .button-submit:hover:not(:disabled) { filter: saturate(1.08); }
+.button-outline:hover:not(:disabled), .button-dark:hover:not(:disabled), .button-quiet:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px #35c5d533, 0 10px 26px #0003;
+}
+.nav-cta span, .button-dark, .button-outline, .clear-draft {
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease, background .22s ease;
+}
+.nav-cta:hover span { display: inline-block; animation: arrowNudge .65s ease-in-out infinite alternate; }
+.example-chip { animation: chipIdleGlow 5s ease-in-out infinite; }
+.example-chip:nth-of-type(2) { animation-delay: .5s; }
+.example-chip:nth-of-type(3) { animation-delay: 1s; }
+.example-chip:nth-of-type(4) { animation-delay: 1.5s; }
+.example-chip:nth-of-type(5) { animation-delay: 2s; }
+@keyframes buttonShine {
+  0%, 62% { left: -45%; opacity: 0; }
+  70% { opacity: .72; }
+  88%, 100% { left: 125%; opacity: 0; }
+}
+@keyframes arrowNudge { from { transform: translate(0, 0); } to { transform: translate(3px, -2px); } }
+@keyframes chipIdleGlow {
+  0%, 88%, 100% { box-shadow: inset 0 1px 0 #ffffff08; }
+  94% { box-shadow: inset 0 1px 0 #ffffff08, 0 0 0 2px #35c5d510; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .button-primary::before, .button-submit::before, .example-chip { animation: none !important; }
+}
