@@ -93,6 +93,7 @@ function HeroArt() {
       <motion.div className="orbit orbit-one" animate={{ rotate: 360 }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }} />
       <motion.div className="orbit orbit-two" animate={{ rotate: -360 }} transition={{ duration: 54, repeat: Infinity, ease: "linear" }} />
       <div className="visual-center">
+        <div className="visual-particles" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /></div>
         <div className="community-illustration">
           <div className="sun-disc" />
           <div className="building building-a"><i /><i /><i /><i /></div>
@@ -101,8 +102,11 @@ function HeroArt() {
           <div className="pathway" />
           <div className="tree tree-a"><i /></div>
           <div className="tree tree-b"><i /></div>
+          <motion.div className="realistic-orb orb-mint" animate={{ y: [0, -12, 0], x: [0, 5, 0], rotate: [0, 12, 0] }} transition={{ duration: 5.4, repeat: Infinity, ease: "easeInOut" }}><span>✦</span></motion.div>
+          <motion.div className="realistic-orb orb-cyan" animate={{ y: [0, 10, 0], x: [0, -5, 0], rotate: [0, -14, 0] }} transition={{ duration: 6.2, repeat: Infinity, ease: "easeInOut", delay: .4 }}><span>⌁</span></motion.div>
+          <motion.div className="realistic-orb orb-lilac" animate={{ y: [0, -8, 0], rotate: [0, 8, 0] }} transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: .8 }}><span>♡</span></motion.div>
         </div>
-        <div className="visual-caption"><span className="status-dot" /> Small steps, shared impact</div>
+        <motion.div className="visual-caption" animate={{ opacity: [.72, 1, .72] }} transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}><span className="status-dot" /> Small steps, shared impact</motion.div>
       </div>
       <motion.div className="float-card float-top" animate={{ y: [0, -7, 0] }} transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}>
         <span className="float-icon mint">✓</span><span><strong>Action-ready</strong><small>Clear next steps</small></span>
