@@ -554,3 +554,29 @@ body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   .button-primary::before, .button-submit::before, .example-chip { animation: none !important; }
 }
+
+
+/* Figma-inspired motion polish: ambient drift, soft glow breathing, and tactile surfaces. */
+.ambient-one { animation: ambientDriftOne 16s ease-in-out infinite alternate; }
+.ambient-two { animation: ambientDriftTwo 19s ease-in-out infinite alternate; }
+.visual-glow { animation: glowBreathe 6s ease-in-out infinite; }
+.float-card { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.result-metric { transition: transform .24s cubic-bezier(.2,.8,.2,1), border-color .24s ease, box-shadow .24s ease; }
+.result-metric:hover { transform: translateY(-3px); border-color: #35c5d5; box-shadow: 0 8px 24px #0002; }
+.full-answer summary { transition: color .2s ease, background .2s ease; }
+.full-answer summary:hover { color: #61e5b5; }
+@keyframes ambientDriftOne {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-22px, 26px, 0) scale(1.08); }
+}
+@keyframes ambientDriftTwo {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(26px, -20px, 0) scale(1.06); }
+}
+@keyframes glowBreathe {
+  0%, 100% { opacity: .72; transform: scale(.98); }
+  50% { opacity: 1; transform: scale(1.035); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ambient-one, .ambient-two, .visual-glow { animation: none !important; }
+}
