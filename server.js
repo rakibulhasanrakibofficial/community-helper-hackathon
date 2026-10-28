@@ -1,5 +1,7 @@
+require("dotenv").config();
 
 const express = require("express");
+const fs = require("fs");
 const path = require("path");
 
 const app = express();
@@ -7,9 +9,17 @@ const PORT = process.env.PORT || 3000;
 const MODEL = process.env.OLLAMA_MODEL || "gemma4:cloud";
 const OLLAMA_URL = "https://ollama.com/api/chat";
 
+// Prefer the Vite production bundle when it exists, while keeping the legacy
+// public page available as a fallback during migration or local debugging.
+const distPath = path.join(__dirname, "dist");
+const publicPath = path.join(__dirname, "public");
+const frontendPath = fs.existsSync(path.join(distPath, "index.html"))
+  ? distPath
+  : publicPath;
+
 app.disable("x-powered-by");
 app.use(express.json({ limit: "30kb" }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(frontendPath));
 
 app.get("/api/health", (_req, res) => {
   res.json({
@@ -163,5 +173,6 @@ Prioritize public safety. Never invent official contacts, claim an issue has bee
 
 app.listen(PORT, () => {
   console.log(`Community Helper AI running on port ${PORT}`);
+  console.log(`Serving frontend from: ${frontendPath}`);
   console.log(`Provider: Ollama Cloud | Model: ${MODEL}`);
 });
