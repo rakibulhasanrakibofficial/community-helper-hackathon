@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import * as THREE from "three";
 
 const examples = [
   { icon: "✦", label: "Streetlights", prompt: "Streetlights in our area are not working." },
@@ -86,28 +89,110 @@ function Header({ onNewChat }) {
   );
 }
 
+function FloatingSpheres() {
+  const group = useRef();
+  const orbA = useRef();
+  const orbB = useRef();
+  const orbC = useRef();
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (group.current) group.current.rotation.y = Math.sin(t * 0.18) * 0.12;
+    if (orbA.current) { orbA.current.position.y = 1.15 + Math.sin(t * 1.1) * 0.13; orbA.current.rotation.x = t * 0.35; orbA.current.rotation.y = t * 0.45; }
+    if (orbB.current) { orbB.current.position.y = 0.35 + Math.sin(t * 0.9 + 1) * 0.16; orbB.current.rotation.y = -t * 0.4; }
+    if (orbC.current) { orbC.current.position.y = -0.55 + Math.sin(t * 1.25 + 2) * 0.1; orbC.current.rotation.x = t * 0.3; }
+  });
+  return (
+    <group ref={group}>
+      <mesh position={[0, -1.2, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[2.25, 64]} />
+        <meshStandardMaterial color="#102c40" roughness={0.86} metalness={0.12} />
+      </mesh>
+      <mesh position={[0, -1.17, 0.25]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[1.55, 64]} />
+        <meshStandardMaterial color="#15556a" roughness={0.7} emissive="#0b4655" emissiveIntensity={0.45} />
+      </mesh>
+      <mesh position={[0, -1.145, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.62, 2.25]} />
+        <meshStandardMaterial color="#24546a" roughness={0.92} />
+      </mesh>
+      {[
+        { x: -1.05, z: 0.1, w: 0.68, h: 1.35, d: 0.55, color: "#11627b" },
+        { x: -0.18, z: -0.08, w: 0.82, h: 1.9, d: 0.65, color: "#1786a1" },
+        { x: 0.82, z: 0.06, w: 0.72, h: 1.48, d: 0.58, color: "#10536d" }
+      ].map((b, index) => (
+        <group key={index} position={[b.x, -1.15 + b.h / 2, b.z]}>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={[b.w, b.h, b.d]} />
+            <meshStandardMaterial color={b.color} roughness={0.32} metalness={0.35} />
+          </mesh>
+          {Array.from({ length: Math.floor(b.h / 0.34) }, (_, row) =>
+            [-1, 0, 1].map((col) => (
+              <mesh key={row + "-" + col} position={[col * (b.w * 0.27), -b.h / 2 + 0.23 + row * 0.34, b.d / 2 + 0.009]}>
+                <boxGeometry args={[Math.min(0.12, b.w * 0.22), 0.17, 0.018]} />
+                <meshStandardMaterial color="#b7f4ff" emissive="#4dd9ee" emissiveIntensity={0.32} roughness={0.22} metalness={0.18} />
+              </mesh>
+            ))
+          )}
+        </group>
+      ))}
+      {[-1.72, 1.62].map((x, i) => (
+        <group key={i} position={[x, -0.65, 0.22]}>
+          <mesh position={[0, -0.32, 0]} castShadow>
+            <cylinderGeometry args={[0.055, 0.075, 0.68, 12]} />
+            <meshStandardMaterial color="#a98b61" roughness={0.85} />
+          </mesh>
+          <mesh position={[0, 0.12, 0]} castShadow>
+            <icosahedronGeometry args={[0.36, 2]} />
+            <meshStandardMaterial color={i ? "#188f83" : "#28b99a"} roughness={0.68} metalness={0.03} />
+          </mesh>
+          <mesh position={[-0.12, 0.25, 0.05]} scale={0.52}>
+            <icosahedronGeometry args={[0.34, 1]} />
+            <meshStandardMaterial color="#68d8ae" roughness={0.7} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[1.22, 1.12, -0.3]}>
+        <sphereGeometry args={[0.27, 32, 32]} />
+        <meshStandardMaterial color="#ffc96d" emissive="#ffb94e" emissiveIntensity={0.75} roughness={0.25} />
+      </mesh>
+      <mesh ref={orbA} position={[-1.12, 1.15, 0.65]} castShadow>
+        <sphereGeometry args={[0.27, 40, 40]} />
+        <meshPhysicalMaterial color="#60e4bd" metalness={0.2} roughness={0.12} clearcoat={1} clearcoatRoughness={0.08} />
+      </mesh>
+      <mesh ref={orbB} position={[1.15, 0.35, 0.82]} castShadow>
+        <icosahedronGeometry args={[0.31, 3]} />
+        <meshPhysicalMaterial color="#51d7f0" metalness={0.22} roughness={0.14} clearcoat={1} clearcoatRoughness={0.08} />
+      </mesh>
+      <mesh ref={orbC} position={[-0.52, -0.55, 0.8]} castShadow>
+        <sphereGeometry args={[0.22, 32, 32]} />
+        <meshPhysicalMaterial color="#c3a0ff" metalness={0.16} roughness={0.16} clearcoat={1} />
+      </mesh>
+      <mesh position={[0, -1.04, 1.06]} rotation={[-0.18, 0, 0]} receiveShadow>
+        <circleGeometry args={[0.56, 48]} />
+        <meshBasicMaterial color="#66e7d1" transparent opacity={0.08} />
+      </mesh>
+    </group>
+  );
+}
+
 function HeroArt() {
   return (
-    <motion.div className="hero-visual" initial={{ opacity: 0, scale: 0.94, y: 14 }} animate={{ opacity: 1, scale: 1, y: 0 }} whileHover={{ scale: 1.012 }} transition={{ duration: 0.75, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}>
+    <motion.div className="hero-visual" initial={{ opacity: 0, scale: 0.94, y: 14 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.75, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}>
       <div className="visual-glow" />
       <motion.div className="orbit orbit-one" animate={{ rotate: 360 }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }} />
       <motion.div className="orbit orbit-two" animate={{ rotate: -360 }} transition={{ duration: 54, repeat: Infinity, ease: "linear" }} />
-      <div className="visual-center">
-        <div className="visual-particles" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /></div>
-        <div className="community-illustration">
-          <div className="sun-disc" />
-          <div className="building building-a"><i /><i /><i /><i /></div>
-          <div className="building building-b"><i /><i /><i /></div>
-          <div className="building building-c"><i /><i /><i /><i /></div>
-          <div className="pathway" />
-          <div className="tree tree-a"><i /></div>
-          <div className="tree tree-b"><i /></div>
-          <motion.div className="realistic-orb orb-mint" animate={{ y: [0, -12, 0], x: [0, 5, 0], rotate: [0, 12, 0] }} transition={{ duration: 5.4, repeat: Infinity, ease: "easeInOut" }}><span>✦</span></motion.div>
-          <motion.div className="realistic-orb orb-cyan" animate={{ y: [0, 10, 0], x: [0, -5, 0], rotate: [0, -14, 0] }} transition={{ duration: 6.2, repeat: Infinity, ease: "easeInOut", delay: .4 }}><span>⌁</span></motion.div>
-          <motion.div className="realistic-orb orb-lilac" animate={{ y: [0, -8, 0], rotate: [0, 8, 0] }} transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: .8 }}><span>♡</span></motion.div>
-        </div>
-        <motion.div className="visual-caption" animate={{ opacity: [.72, 1, .72] }} transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}><span className="status-dot" /> Small steps, shared impact</motion.div>
+      <div className="real3d-scene" role="img" aria-label="Animated three-dimensional community scene with buildings, trees, road, and floating glass spheres">
+        <Canvas camera={{ position: [0, 0.2, 6.8], fov: 38 }} dpr={[1, 1.5]} shadows gl={{ antialias: true, alpha: true }}>
+          <color attach="background" args={["#0b1d31"]} />
+          <ambientLight intensity={1.25} />
+          <hemisphereLight args={["#bcefff", "#071421", 1.2]} />
+          <directionalLight position={[-3, 5, 5]} intensity={3} color="#b8f7ff" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+          <pointLight position={[2.5, 2.4, 2.2]} intensity={32} distance={8} color="#35d9e8" />
+          <pointLight position={[-2.4, 1.6, 1.2]} intensity={20} distance={6} color="#63e7b8" />
+          <FloatingSpheres />
+        </Canvas>
       </div>
+      <div className="visual-caption"><span className="status-dot" /> Small steps, shared impact</div>
       <motion.div className="float-card float-top" animate={{ y: [0, -7, 0] }} transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}>
         <span className="float-icon mint">✓</span><span><strong>Action-ready</strong><small>Clear next steps</small></span>
       </motion.div>
