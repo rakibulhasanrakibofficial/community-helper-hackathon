@@ -5,7 +5,7 @@ Community Helper AI turns a resident's description of a local issue into a pract
 ## Features
 
 - Responsive React interface with subtle entrance, hover, scroll-reveal, loading and result animations.
-- Motion for React (Motion 3 animation API) for motion that supports prefers-reduced-motion styling.
+- Motion for React (imported from `motion/react`) for entrance, hover, scroll-reveal, and state-transition animations.
 - Community issue examples and clear, prioritized action steps.
 - AI response summaries with safety advice and guidance for contacting the appropriate local authority.
 - English and Bengali voice-to-text where the browser supports Speech Recognition.
