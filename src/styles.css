@@ -761,3 +761,25 @@ body { overflow-x: clip; }
   .brand { font-size: 16px; letter-spacing: -0.7px; gap: 9px; }
   .brand small { font-size: 6.5px; letter-spacing: 2.1px; }
 }
+
+
+/* Dark cinematic hero to match the Community Helper Figma concept. */
+.topbar{border-bottom-color:rgba(135,211,222,.14);color:#e8f4fa}
+.app-shell{background:radial-gradient(ellipse at 78% 15%,rgba(21,107,132,.22),transparent 34%),linear-gradient(180deg,#071827 0%,#0a2032 48%,#f5f8f4 48.1%,#f5f8f4 100%)}
+.topbar .brand{color:#effaff}.topbar .brand-light{color:#72dce7}.topbar .brand small{color:#7e9baa}
+.topbar .brand-mark{background:#10384a;color:#79f0d0;box-shadow:0 0 24px rgba(63,215,229,.13)}
+.topbar .nav-links{color:#a9c0cc}.topbar .nav-links a:hover{color:#78e6ed}
+.topbar .button-quiet{color:#eafaff;background:rgba(15,43,61,.82);border-color:rgba(122,221,235,.22)}
+.hero-section{color:#eaf5fa}.hero-copy .status-tag{background:rgba(45,151,147,.13);border-color:rgba(104,236,204,.22);color:#78e9c7}
+.hero-copy h1{color:#f1f8fc}.hero-copy h1 span{color:#65dce8}.hero-description{color:#a9bfcb}
+.hero-copy .button-primary{background:#72ead0;color:#09202e;box-shadow:0 9px 28px rgba(44,215,196,.15)}
+.hero-copy .button-primary:hover{background:#9af4df}.hero-copy .button-primary span{color:#0c4751}
+.hero-copy .button-text{color:#b7cbd5}.hero-copy .play-icon{background:#112c3f;border-color:rgba(132,217,231,.2);color:#79e8ed}
+.hero-copy .trust-row p{color:#e4f0f5}.hero-copy .trust-row small{color:#8eaab8}
+.hero-visual .visual-glow{background:radial-gradient(circle,rgba(28,132,158,.28) 0,rgba(14,62,82,.16) 42%,transparent 73%)}
+.hero-visual .orbit{border-color:rgba(104,210,224,.2)}.hero-visual .orbit-two{border-color:rgba(111,234,207,.17)}
+.hero-visual .visual-caption{color:#a1d4d7}
+.hero-visual .float-card{background:rgba(9,31,47,.88);border-color:rgba(113,221,231,.19);box-shadow:0 14px 38px rgba(0,0,0,.22)}
+.hero-visual .float-card strong{color:#e8f7fb}.hero-visual .float-card small{color:#9bb7c2}
+.real3d-scene{width:min(100%,360px);height:330px;border-radius:30px;background:radial-gradient(ellipse at 50% 48%,#16435a 0%,#0b2539 58%,#071827 100%)}
+@media(max-width:680px){.app-shell{background:linear-gradient(180deg,#071827 0%,#0a2032 690px,#f5f8f4 690px,#f5f8f4 100%)}.real3d-scene{width:min(100%,310px);height:285px}}
