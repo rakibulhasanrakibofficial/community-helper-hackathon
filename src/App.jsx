@@ -89,87 +89,141 @@ function Header({ onNewChat }) {
 }
 
 function FloatingSpheres() {
-  const group = useRef();
-  const orbA = useRef();
-  const orbB = useRef();
-  const orbC = useRef();
+  const city = useRef();
+  const pulseLights = useRef();
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    if (group.current) group.current.rotation.y = Math.sin(t * 0.18) * 0.12;
-    if (orbA.current) { orbA.current.position.y = 1.15 + Math.sin(t * 1.1) * 0.13; orbA.current.rotation.x = t * 0.35; orbA.current.rotation.y = t * 0.45; }
-    if (orbB.current) { orbB.current.position.y = 0.35 + Math.sin(t * 0.9 + 1) * 0.16; orbB.current.rotation.y = -t * 0.4; }
-    if (orbC.current) { orbC.current.position.y = -0.55 + Math.sin(t * 1.25 + 2) * 0.1; orbC.current.rotation.x = t * 0.3; }
+    if (city.current) city.current.rotation.y = Math.sin(t * 0.14) * 0.075;
+    if (pulseLights.current) pulseLights.current.children.forEach((light, i) => {
+      light.material.emissiveIntensity = 0.7 + (Math.sin(t * 2 + i * 1.5) + 1) * 0.45;
+    });
   });
+
+  const buildings = [
+    { x: -1.08, z: -0.2, w: 0.55, h: 1.18, d: 0.5, color: "#35566b", roof: "#a7bdca", floors: 3 },
+    { x: -0.48, z: -0.42, w: 0.56, h: 1.58, d: 0.58, color: "#c4d0d8", roof: "#edf4f7", floors: 4 },
+    { x: 0.15, z: -0.12, w: 0.88, h: 1.05, d: 0.75, color: "#273e51", roof: "#91aab8", floors: 2 },
+    { x: 0.93, z: -0.28, w: 0.58, h: 1.34, d: 0.56, color: "#31566b", roof: "#c5d5de", floors: 3 },
+    { x: 1.38, z: 0.35, w: 0.43, h: 0.78, d: 0.42, color: "#8ba8b9", roof: "#dbe8ee", floors: 2 },
+    { x: -1.42, z: 0.38, w: 0.42, h: 0.75, d: 0.43, color: "#8aa7b8", roof: "#dbe8ee", floors: 2 },
+    { x: 0.12, z: -0.82, w: 0.56, h: 0.65, d: 0.43, color: "#35586b", roof: "#c8d9e1", floors: 2 }
+  ];
+  const trees = [[-1.7, 0.48], [-1.52, -0.48], [-0.93, 0.72], [-0.25, 0.82], [0.7, 0.76], [1.58, 0.18], [1.55, -0.52], [0.72, -0.94], [-0.82, -0.92]];
+
   return (
-    <group ref={group}>
-      <mesh position={[0, -1.2, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[2.25, 64]} />
-        <meshStandardMaterial color="#102c40" roughness={0.86} metalness={0.12} />
+    <group ref={city}>
+      {/* Metallic circular display base with luminous edge rings */}
+      <mesh position={[0, -1.34, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[2.05, 2.16, 0.18, 96]} />
+        <meshStandardMaterial color="#172b3b" metalness={0.78} roughness={0.25} />
       </mesh>
-      <mesh position={[0, -1.17, 0.25]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[1.55, 64]} />
-        <meshStandardMaterial color="#15556a" roughness={0.7} emissive="#0b4655" emissiveIntensity={0.45} />
+      <mesh position={[0, -1.235, 0]} castShadow>
+        <cylinderGeometry args={[2.12, 2.12, 0.045, 96]} />
+        <meshStandardMaterial color="#78d9e8" metalness={0.8} roughness={0.22} emissive="#238ca4" emissiveIntensity={0.45} />
       </mesh>
-      <mesh position={[0, -1.145, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.62, 2.25]} />
-        <meshStandardMaterial color="#24546a" roughness={0.92} />
+      <mesh position={[0, -1.19, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[2.0, 2.06, 0.09, 96]} />
+        <meshStandardMaterial color="#213c50" metalness={0.6} roughness={0.3} />
       </mesh>
-      {[
-        { x: -1.05, z: 0.1, w: 0.68, h: 1.35, d: 0.55, color: "#11627b" },
-        { x: -0.18, z: -0.08, w: 0.82, h: 1.9, d: 0.65, color: "#1786a1" },
-        { x: 0.82, z: 0.06, w: 0.72, h: 1.48, d: 0.58, color: "#10536d" }
-      ].map((b, index) => (
-        <group key={index} position={[b.x, -1.15 + b.h / 2, b.z]}>
+      <mesh position={[0, -1.13, 0]} receiveShadow>
+        <cylinderGeometry args={[1.94, 1.94, 0.035, 96]} />
+        <meshStandardMaterial color="#315a6b" metalness={0.45} roughness={0.4} emissive="#14566b" emissiveIntensity={0.3} />
+      </mesh>
+      <mesh position={[0, -1.095, 0]} receiveShadow>
+        <cylinderGeometry args={[1.88, 1.88, 0.045, 96]} />
+        <meshStandardMaterial color="#1b303b" roughness={0.92} />
+      </mesh>
+      <mesh position={[0, -1.065, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.25, 1.31, 96]} />
+        <meshStandardMaterial color="#5fd9e9" emissive="#30c4dc" emissiveIntensity={0.4} metalness={0.4} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, -1.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.68, 0.72, 96]} />
+        <meshStandardMaterial color="#5a7c8b" roughness={0.75} />
+      </mesh>
+      {/* Individual architecture, roof slabs and illuminated windows */}
+      {buildings.map((b, index) => (
+        <group key={index} position={[b.x, -1.04 + b.h / 2, b.z]}>
           <mesh castShadow receiveShadow>
             <boxGeometry args={[b.w, b.h, b.d]} />
-            <meshStandardMaterial color={b.color} roughness={0.32} metalness={0.35} />
+            <meshStandardMaterial color={b.color} roughness={0.38} metalness={0.25} />
           </mesh>
-          {Array.from({ length: Math.floor(b.h / 0.34) }, (_, row) =>
-            [-1, 0, 1].map((col) => (
-              <mesh key={row + "-" + col} position={[col * (b.w * 0.27), -b.h / 2 + 0.23 + row * 0.34, b.d / 2 + 0.009]}>
-                <boxGeometry args={[Math.min(0.12, b.w * 0.22), 0.17, 0.018]} />
-                <meshStandardMaterial color="#b7f4ff" emissive="#4dd9ee" emissiveIntensity={0.32} roughness={0.22} metalness={0.18} />
-              </mesh>
-            ))
+          <mesh position={[0, b.h / 2 + 0.025, 0]} castShadow>
+            <boxGeometry args={[b.w + 0.055, 0.055, b.d + 0.055]} />
+            <meshStandardMaterial color={b.roof} roughness={0.32} metalness={0.25} />
+          </mesh>
+          {Array.from({ length: b.floors }, (_, floor) => (
+            <group key={floor} position={[0, -b.h / 2 + 0.2 + floor * (b.h - 0.3) / b.floors, b.d / 2 + 0.012]}>
+              {[-1, 0, 1].map((col) => (
+                <mesh key={col} position={[col * b.w * 0.27, 0, 0]}>
+                  <boxGeometry args={[Math.min(0.095, b.w * 0.19), 0.12, 0.018]} />
+                  <meshStandardMaterial
+                    color={(floor + col + index) % 3 === 0 ? "#f7d9a0" : "#9be9f4"}
+                    emissive={(floor + col + index) % 3 === 0 ? "#e8a94e" : "#39cce5"}
+                    emissiveIntensity={0.7}
+                    roughness={0.2}
+                  />
+                </mesh>
+              ))}
+            </group>
+          ))}
+          {index % 2 === 0 && (
+            <mesh position={[b.w * 0.18, b.h / 2 + 0.09, -b.d * 0.12]} castShadow>
+              <boxGeometry args={[0.13, 0.12, 0.13]} />
+              <meshStandardMaterial color="#718997" metalness={0.7} roughness={0.3} />
+            </mesh>
           )}
         </group>
       ))}
-      {[-1.72, 1.62].map((x, i) => (
-        <group key={i} position={[x, -0.65, 0.22]}>
-          <mesh position={[0, -0.32, 0]} castShadow>
-            <cylinderGeometry args={[0.055, 0.075, 0.68, 12]} />
-            <meshStandardMaterial color="#a98b61" roughness={0.85} />
+      {/* Central road and lane markers */}
+      <mesh position={[0, -1.005, 0.64]} rotation={[-0.12, 0, 0]}>
+        <boxGeometry args={[0.38, 0.018, 1.62]} />
+        <meshStandardMaterial color="#7c9aa7" roughness={0.85} />
+      </mesh>
+      {[-0.42, 0, 0.42].map((x, i) => (
+        <mesh key={i} position={[x, -0.993, 0.73]} rotation={[-0.12, 0, 0]}>
+          <boxGeometry args={[0.022, 0.012, 0.13]} />
+          <meshBasicMaterial color="#d6f8fb" />
+        </mesh>
+      ))}
+      {/* Trees with trunks and layered faceted foliage */}
+      {trees.map(([x, z], i) => (
+        <group key={i} position={[x, -0.98, z]}>
+          <mesh position={[0, 0.13, 0]} castShadow>
+            <cylinderGeometry args={[0.03, 0.047, 0.27, 8]} />
+            <meshStandardMaterial color="#987653" roughness={0.9} />
           </mesh>
-          <mesh position={[0, 0.12, 0]} castShadow>
-            <icosahedronGeometry args={[0.36, 2]} />
-            <meshStandardMaterial color={i ? "#188f83" : "#28b99a"} roughness={0.68} metalness={0.03} />
+          <mesh position={[0, 0.36, 0]} castShadow>
+            <icosahedronGeometry args={[0.18 + (i % 3) * 0.025, 2]} />
+            <meshStandardMaterial color={i % 2 ? "#176e65" : "#23846f"} roughness={0.82} />
           </mesh>
-          <mesh position={[-0.12, 0.25, 0.05]} scale={0.52}>
-            <icosahedronGeometry args={[0.34, 1]} />
-            <meshStandardMaterial color="#68d8ae" roughness={0.7} />
+          <mesh position={[-0.08, 0.42, 0.035]} scale={0.62} castShadow>
+            <icosahedronGeometry args={[0.15, 1]} />
+            <meshStandardMaterial color="#48a88a" roughness={0.84} />
           </mesh>
         </group>
       ))}
-      <mesh position={[1.22, 1.12, -0.3]}>
-        <sphereGeometry args={[0.27, 32, 32]} />
-        <meshStandardMaterial color="#ffc96d" emissive="#ffb94e" emissiveIntensity={0.75} roughness={0.25} />
-      </mesh>
-      <mesh ref={orbA} position={[-1.12, 1.15, 0.65]} castShadow>
-        <sphereGeometry args={[0.27, 40, 40]} />
-        <meshPhysicalMaterial color="#60e4bd" metalness={0.2} roughness={0.12} clearcoat={1} clearcoatRoughness={0.08} />
-      </mesh>
-      <mesh ref={orbB} position={[1.15, 0.35, 0.82]} castShadow>
-        <icosahedronGeometry args={[0.31, 3]} />
-        <meshPhysicalMaterial color="#51d7f0" metalness={0.22} roughness={0.14} clearcoat={1} clearcoatRoughness={0.08} />
-      </mesh>
-      <mesh ref={orbC} position={[-0.52, -0.55, 0.8]} castShadow>
-        <sphereGeometry args={[0.22, 32, 32]} />
-        <meshPhysicalMaterial color="#c3a0ff" metalness={0.16} roughness={0.16} clearcoat={1} />
-      </mesh>
-      <mesh position={[0, -1.04, 1.06]} rotation={[-0.18, 0, 0]} receiveShadow>
-        <circleGeometry args={[0.56, 48]} />
-        <meshBasicMaterial color="#66e7d1" transparent opacity={0.08} />
-      </mesh>
+      {/* Tiny street lamps and softly pulsing city lights */}
+      {[-1.58, -0.72, 0.82, 1.62].map((x, i) => (
+        <group key={i} position={[x, -0.82, i % 2 ? 0.4 : -0.62]}>
+          <mesh position={[0, 0.28, 0]}>
+            <cylinderGeometry args={[0.012, 0.02, 0.54, 8]} />
+            <meshStandardMaterial color="#a7c2cf" metalness={0.8} roughness={0.3} />
+          </mesh>
+          <mesh position={[0.05, 0.55, 0]}>
+            <sphereGeometry args={[0.04, 12, 12]} />
+            <meshStandardMaterial color="#b7f7ff" emissive="#54dff5" emissiveIntensity={2.2} />
+          </mesh>
+        </group>
+      ))}
+      <group ref={pulseLights}>
+        {[-1.12, -0.32, 0.48, 1.28].map((x, i) => (
+          <mesh key={i} position={[x, -0.94, i % 2 ? 0.72 : -0.58]}>
+            <sphereGeometry args={[0.032, 12, 12]} />
+            <meshStandardMaterial color="#9df7ff" emissive="#41d8f1" emissiveIntensity={0.8} />
+          </mesh>
+        ))}
+      </group>
     </group>
   );
 }
