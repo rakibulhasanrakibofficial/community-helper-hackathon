@@ -74,6 +74,8 @@ test("remote VoiceStudio requires exact HTTPS allowlist and both Access secrets"
     assert.equal(resolveBaseUrl("https://voice.example.com").base.hostname, "voice.example.com");
     assert.match(resolveBaseUrl("https://other.example.com").error, /allowlisted HTTPS hostname/i);
     assert.match(resolveBaseUrl("http://voice.example.com").error, /allowlisted HTTPS hostname/i);
+    assert.match(resolveBaseUrl("https://voice.example.com:8443").error, /allowlisted HTTPS hostname/i);
+    assert.match(resolveBaseUrl("https://voice.example.com/untrusted-path").error, /allowlisted HTTPS hostname/i);
     delete process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET;
     assert.match(resolveBaseUrl("https://voice.example.com").error, /allowlisted HTTPS hostname/i);
   } finally {
