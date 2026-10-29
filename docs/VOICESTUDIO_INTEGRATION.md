@@ -1,28 +1,33 @@
 # VoiceStudio integration
 
-Community Helper now includes an initial in-app integration for a VoiceStudio backend running on the **same computer as the Community Helper Node server**. The UI supports narration of the latest AI action plan and transcription of an uploaded audio file.
+Community Helper keeps its browser-based microphone input and browser read-aloud. When a local VoiceStudio service and compatible installed models are ready, the app can also send an AI response for speech generation or an uploaded audio file for transcription. VoiceStudio calls are proxied by the Community Helper backend.
 
 ## Local setup
 
-1. Start the existing VoiceStudio installation. Its default backend URL is `http://127.0.0.1:3900`.
-2. Confirm `GET /health` and `GET /openapi.json` work in the browser.
-3. Set `VOICESTUDIO_URL=http://127.0.0.1:3900` in the Community Helper server environment if needed.
-4. Install the Community Helper project dependencies if needed, then start the frontend and server using the existing project scripts.
-5. Generate an action plan and use **VoiceStudio TTS** to generate audio. In the VoiceStudio section, select an audio file up to 20 MB and choose **Transcribe audio** to display its transcript.
+1. Install and start VoiceStudio on the same computer as the Community Helper backend.
+2. Install Community Helper dependencies with `npm ci`.
+3. Copy `.env.example` to `.env` and set `VOICESTUDIO_URL=http://127.0.0.1:3900` if VoiceStudio uses another local port. The URL must use plain HTTP and `127.0.0.1`, `localhost`, or `::1`.
+4. In VoiceStudio, install a TTS model and an ASR model supported by the active engines. Review their size and license information in VoiceStudio first. Community Helper never installs or downloads models.
+5. Start the built app with `npm start`, or run `npm run build` and `npm run dev` for development. The existing Vite development proxy targets port 3000; when `.env` sets another `PORT`, set it to 3000 while using `npm run dev`.
+6. Open the VoiceStudio section. It checks VoiceStudio health, API capabilities, active engines, and the installed model catalog. Speech and transcription controls stay disabled until their matching active model is present and marked installed.
 
-## Backend routes
+## Implemented endpoints
 
-- `GET /api/voicestudio/status` checks VoiceStudio health and queries its OpenAPI, speech-capability, engine, and model endpoints when available. API support and installed-model readiness are reported separately.
-- `POST /api/voicestudio/speech` accepts JSON `{ "input": "..." }` and proxies it to the OpenAI-compatible `POST /v1/audio/speech` endpoint with `model=tts-1`, `voice=alloy`, and WAV output.
-- `POST /api/voicestudio/transcribe` accepts raw audio bytes (up to 20 MB) and forwards them as multipart data to `POST /v1/audio/transcriptions` using `model=whisper-1`.
-- Both routes return errors if VoiceStudio or the relevant endpoint/model is unavailable. Models are never installed or downloaded automatically.
-- Existing browser speech input and browser read-aloud remain available independently.
+| Community Helper route | VoiceStudio request | Request/response |
+| --- | --- | --- |
+| `GET /api/voicestudio/status` | `GET /health`, `/.well-known/voicestudio-speech`, `/engines/tts`, `/engines/asr`, `/models`, `/openapi.json`, and `/v1/models` | Reports service connection and independent TTS/STT readiness. A ready flag requires a healthy service, an available active engine, the documented compatible endpoint/model alias, and the active model row marked installed and complete. |
+| `POST /api/voicestudio/speech` | `POST /v1/audio/speech` | JSON `{ "model": "tts-1", "input": "…", "voice": "alloy", "response_format": "wav", "speed": 1 }`; VoiceStudio returns WAV bytes. Input is limited to 4,096 characters. |
+| `POST /api/voicestudio/transcribe` | `POST /v1/audio/transcriptions` | Multipart field `audio` on Community Helper; backend forwards it as VoiceStudio’s required `file` field with `model=whisper-1` and `response_format=json`. Community Helper returns `{ "text": "…" }`. |
 
-## Limitations and security
+The transcription upload accepts WAV, MP3, M4A, MP4, AAC, OGG/OGA, FLAC, and WebM files up to 20 MB. The backend uses in-memory upload storage, request timeouts, rejects redirects, and refuses non-loopback or non-HTTP service URLs. It does not forward credentials or expose the VoiceStudio URL to the browser.
 
-- The bridge only allows loopback HTTP addresses and is not a general URL proxy.
-- VoiceStudio must run on the same computer/network namespace as the Community Helper server. A remote Render deployment's localhost is the Render machine, not the user's PC.
-- Actual API support and model readiness depend on the running VoiceStudio version and installed models. The live `/openapi.json` is authoritative.
-- This phase does not integrate cloning, voice design, dubbing, live streaming, or call workflows inside Community Helper.
-- Review each model's license, voice-input permissions, and output rights before commercial use.
-- VoiceStudio is licensed under AGPL-3.0. This project calls its HTTP API and does not copy VoiceStudio source code; review licensing before redistributing or tightly combining components.
+The result card keeps the browser **Listen** button and adds a separate **VoiceStudio audio** control. Generated audio plays in a browser audio player. The VoiceStudio section includes an audio upload control and an option to copy a reviewed transcript into the problem field.
+
+## Limits and privacy
+
+- TTS and transcription depend on VoiceStudio’s active engine and installed model. A service responding to `/health` alone is not enough to enable either feature.
+- The active model’s license may restrict commercial use or require other terms. Check the model’s license and VoiceStudio’s license information before using generated or transcribed content. Community Helper does not make license eligibility decisions.
+- Voice cloning, dubbing, translation, phone calls, and other advanced VoiceStudio workflows are not integrated into Community Helper.
+- Audio and text are sent to the local VoiceStudio service through the backend. Do not expose this local bridge as an unauthenticated public service.
+- A deployed Community Helper server cannot reach VoiceStudio on an end user’s computer through its own `localhost`. Remote access needs a separately designed authenticated and encrypted connection.
+- VoiceStudio’s AGPL-3.0 project license remains separate from this integration; this project does not copy VoiceStudio source files. Review the license before redistributing or tightly combining components.

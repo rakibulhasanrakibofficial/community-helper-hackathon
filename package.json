@@ -8,19 +8,21 @@
     "start": "npm run build && node server.js",
     "dev": "concurrently -k \"node server.js\" \"vite --host 0.0.0.0\"",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test"
   },
   "license": "MIT",
   "dependencies": {
+    "@react-three/fiber": "^9.3.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "mongoose": "^8.19.0",
     "motion": "^14.5.0",
+    "multer": "^2.5.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "@react-three/fiber": "^9.3.0",
-    "three": "^0.180.0",
-    "mongoose": "^8.19.0"
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",

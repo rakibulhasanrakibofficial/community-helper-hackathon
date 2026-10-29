@@ -883,20 +883,17 @@ body {
 @media(max-width:900px) { .voicestudio-feature-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:600px) { .voicestudio-status-card { align-items:flex-start; flex-wrap:wrap; } .voicestudio-open { width:100%; } .voicestudio-feature-grid { grid-template-columns:1fr; } }
 
-
-/* Functional VoiceStudio tools */
-.voicestudio-tools-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:18px; }
-.voicestudio-tool-card { min-width:0; padding:24px; border:1px solid var(--line); border-radius:22px; background:rgba(255,255,255,.9); box-shadow:0 14px 36px rgba(24,60,50,.05); }
-.voicestudio-tool-heading { display:flex; align-items:flex-start; gap:13px; margin-bottom:18px; }
-.voicestudio-tool-icon { display:grid; place-items:center; width:42px; height:42px; flex:0 0 42px; border-radius:13px; background:#e5f7f1; color:#216b5a; font-size:1.3rem; }
-.voicestudio-tool-heading h3 { margin:0 0 6px; color:var(--ink); font-size:1.1rem; }
-.voicestudio-tool-heading p,.voicestudio-inline-note { margin:0; color:var(--muted); font-size:.86rem; line-height:1.6; }
-.voicestudio-tool-card > .button { margin-top:14px; }
-.voicestudio-tool-card input[type=file] { display:block; width:100%; margin:8px 0 12px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); font:inherit; font-size:.85rem; }
-.voicestudio-file-label { display:block; margin:14px 0 7px; color:var(--ink); font-size:.84rem; font-weight:700; }
-.voicestudio-inline-note { margin-top:10px; overflow-wrap:anywhere; }
-.voicestudio-inline-error { margin:10px 0 0; color:#a83232; font-size:.86rem; line-height:1.6; }
-.voicestudio-transcript { width:100%; min-height:150px; padding:13px; border:1px solid var(--line); border-radius:12px; color:var(--ink); background:#fff; resize:vertical; font:inherit; line-height:1.6; }
-.voicestudio-audio-player { display:block; width:100%; margin-top:12px; }
-.voicestudio-tool-card button:disabled { opacity:.5; cursor:not-allowed; }
-@media(max-width:760px) { .voicestudio-tools-grid { grid-template-columns:1fr; } .voicestudio-tool-card { padding:19px; } }
+.voicestudio-upload-panel { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:14px 20px; padding:24px; margin:20px 0; border:1px solid var(--line); border-radius:22px; background:rgba(255,255,255,.84); }
+.voicestudio-upload-panel > div:first-child { grid-column:1 / -1; }
+.voicestudio-upload-panel h3 { margin:8px 0 5px; color:var(--ink); font-size:1.15rem; }
+.voicestudio-upload-panel p { margin:0; color:var(--muted); font-size:.86rem; line-height:1.65; }
+.voicestudio-file-label { display:grid; gap:7px; color:var(--ink); font-size:.88rem; font-weight:700; }
+.voicestudio-file-label input { max-width:100%; color:var(--muted); font-size:.82rem; }
+.voicestudio-file-name { color:var(--muted); font-size:.8rem; overflow-wrap:anywhere; }
+.voicestudio-transcription-status { grid-column:1 / -1; }
+.voicestudio-transcription-result { grid-column:1 / -1; display:grid; gap:12px; padding:16px; border-radius:14px; background:#f5f8f3; }
+.voicestudio-transcription-result p { white-space:pre-wrap; overflow-wrap:anywhere; color:var(--ink); }
+.voicestudio-transcription-result button { justify-self:start; }
+.voicestudio-audio-player { display:block; width:min(100%,560px); margin-top:12px; }
+.result-buttons button:disabled,.voicestudio-upload-panel button:disabled { opacity:.5; cursor:not-allowed; }
+@media(max-width:600px) { .voicestudio-upload-panel { grid-template-columns:1fr; padding:18px; } .voicestudio-upload-panel > div:first-child,.voicestudio-transcription-status,.voicestudio-transcription-result { grid-column:1; } .voicestudio-upload-panel button { width:100%; } }
