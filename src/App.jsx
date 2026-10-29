@@ -392,6 +392,9 @@ export default function App() {
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [historyItems, setHistoryItems] = useState([]);
+  const [historyBusy, setHistoryBusy] = useState(false);
+  const [historyError, setHistoryError] = useState("");
   const [voiceStatus, setVoiceStatus] = useState("Voice input is available in supported browsers.");
   const [voiceLanguage, setVoiceLanguage] = useState("en-US");
   const [listening, setListening] = useState(false);
@@ -468,6 +471,25 @@ export default function App() {
     problemRef.current?.focus();
   };
 
+  const loadHistory = async () => {
+    setHistoryBusy(true);
+    setHistoryError("");
+    try {
+      const response = await fetch("/api/history");
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not load saved history.");
+      setHistoryItems(Array.isArray(data.requests) ? data.requests : []);
+    } catch (historyRequestError) {
+      setHistoryError(historyRequestError.message || "Could not load saved history.");
+    } finally {
+      setHistoryBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
   const reset = () => {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     if (recognitionRef.current && listening) recognitionRef.current.stop();
@@ -505,6 +527,7 @@ export default function App() {
       const generated = data.answer || data.response || data.reply;
       if (typeof generated !== "string" || !generated.trim()) throw new Error("The AI returned an empty answer. Please try again.");
       setAnswer(generated.trim());
+      await loadHistory();
       window.setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (requestError) {
       setError(requestError.message || "Could not connect to Community Helper AI. Please try again.");
@@ -608,6 +631,48 @@ export default function App() {
           {busy && <motion.div className="loading-card" key="loading" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}><motion.div className="loading-symbol" animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>✳</motion.div><div><strong>Putting the pieces together…</strong><p>Turning your concern into a practical next step.</p></div><div className="loading-bars"><i /><i /><i /></div></motion.div>}
           {answer && !busy && <ResultView key="answer" answer={answer} problem={problem} onFollowUp={followUp} onListen={listenToAnswer} onCopy={copyPlan} onPrint={() => window.print()} voiceStatus={voiceStatus} />}
         </AnimatePresence>
+
+        <section className="history-section" id="saved-history">
+          <div className="history-heading">
+            <div>
+              <span className="section-kicker">YOUR PREVIOUS REQUESTS</span>
+              <h2>Saved community history</h2>
+              <p>Recent AI action plans saved in MongoDB Atlas on this project’s server.</p>
+            </div>
+            <button className="button button-outline history-refresh" type="button" onClick={loadHistory} disabled={historyBusy}>
+              {historyBusy ? "Loading…" : "↻ Refresh history"}
+            </button>
+          </div>
+          {historyError && <p className="history-message history-error" role="alert">{historyError}</p>}
+          {!historyError && !historyBusy && historyItems.length === 0 && (
+            <div className="history-empty">
+              <span aria-hidden="true">◷</span>
+              <strong>No saved requests yet</strong>
+              <p>Generate an action plan and it will appear here when MongoDB is connected.</p>
+            </div>
+          )}
+          {historyBusy && historyItems.length === 0 && <p className="history-message">Loading saved requests…</p>}
+          {historyItems.length > 0 && (
+            <div className="history-grid">
+              {historyItems.map(item => (
+                <article className="history-card" key={item._id}>
+                  <div className="history-card-meta">
+                    <span>{item.provider || "AI assistant"}</span>
+                    <time dateTime={item.createdAt}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : "Date unavailable"}</time>
+                  </div>
+                  <h3>{item.problem}</h3>
+                  <p>{item.answer}</p>
+                  <button className="history-use-button" type="button" onClick={() => {
+                    setProblem(item.problem || "");
+                    setAnswer(item.answer || "");
+                    setError("");
+                    document.getElementById("get-started")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}>View this plan ↑</button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="how-section" id="how-it-works">
           <motion.div className="section-intro" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={fadeUp}>
