@@ -54,6 +54,38 @@ app.get("/api/history", async (_req, res) => {
   }
 });
 
+app.delete("/api/history", async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ error: "Database is not connected yet." });
+  }
+
+  try {
+    const { ids, all } = req.body || {};
+
+    if (all === true) {
+      const result = await HelpRequest.deleteMany({});
+      return res.json({ deletedCount: result.deletedCount || 0, scope: "all" });
+    }
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "Select at least one history item to delete." });
+    }
+
+    const idsAreValid = ids.every(id =>
+      typeof id === "string" && mongoose.Types.ObjectId.isValid(id)
+    );
+    if (!idsAreValid) {
+      return res.status(400).json({ error: "One or more selected history IDs are invalid." });
+    }
+
+    const result = await HelpRequest.deleteMany({ _id: { $in: [...new Set(ids)] } });
+    return res.json({ deletedCount: result.deletedCount || 0, scope: "selected" });
+  } catch (error) {
+    console.error("Could not delete help history:", error.message);
+    return res.status(500).json({ error: "Could not delete saved history." });
+  }
+});
+
 app.post("/api/help", async (req, res) => {
   const apiKey = process.env.OLLAMA_API_KEY;
   const problem = req.body?.problem;
