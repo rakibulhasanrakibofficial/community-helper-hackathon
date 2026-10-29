@@ -865,3 +865,20 @@ body {
   .history-actions { width:100%; justify-content:flex-start; }
   .history-actions button { flex:1 1 auto; }
 }
+
+/* VoiceStudio local integration hub */
+.voicestudio-section { margin: 72px 0; }
+.voicestudio-status-card { display:flex; align-items:center; gap:16px; padding:22px; margin:28px 0 20px; border:1px solid var(--line); border-radius:22px; background:rgba(255,255,255,.84); box-shadow:0 16px 42px rgba(24,60,50,.06); }
+.voicestudio-status-dot { width:11px; height:11px; flex:0 0 11px; border-radius:50%; background:#d59a48; box-shadow:0 0 0 5px rgba(213,154,72,.12); }
+.voicestudio-status-dot.is-connected { background:#2aaf7a; box-shadow:0 0 0 5px rgba(42,175,122,.13); }
+.voicestudio-status-copy { flex:1; min-width:0; }
+.voicestudio-status-copy strong { color:var(--ink); font-size:.98rem; }
+.voicestudio-status-copy p,.voicestudio-disclaimer { color:var(--muted); font-size:.86rem; line-height:1.65; margin:6px 0 0; }
+.voicestudio-feature-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+.voicestudio-feature-card { padding:22px; border:1px solid var(--line); border-radius:20px; background:var(--paper); }
+.voicestudio-feature-card > span { display:inline-flex; color:#527d61; font-size:.75rem; font-weight:800; letter-spacing:.1em; margin-bottom:18px; }
+.voicestudio-feature-card h3 { margin:0 0 9px; color:var(--ink); font-size:1rem; }
+.voicestudio-feature-card p { margin:0; color:var(--muted); font-size:.85rem; line-height:1.65; }
+.voicestudio-disclaimer { margin-top:14px; }
+@media(max-width:900px) { .voicestudio-feature-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { .voicestudio-status-card { align-items:flex-start; flex-wrap:wrap; } .voicestudio-open { width:100%; } .voicestudio-feature-grid { grid-template-columns:1fr; } }
