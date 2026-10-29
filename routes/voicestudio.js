@@ -25,7 +25,7 @@ function resolveBaseUrl(configuredUrl) {
   const remoteHost = typeof process.env.VOICESTUDIO_ALLOWED_HOST === "string" ? process.env.VOICESTUDIO_ALLOWED_HOST.trim().toLowerCase() : "";
   const remoteAccessReady = Boolean(process.env.VOICESTUDIO_ACCESS_CLIENT_ID && process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET);
   const localHttp = base.protocol === "http:" && loopback;
-  const remoteHttps = base.protocol === "https:" && !loopback && remoteHost && base.hostname.toLowerCase() === remoteHost && remoteAccessReady;
+  const remoteHttps = base.protocol === "https:" && !loopback && !base.port && base.pathname === "/" && remoteHost && base.hostname.toLowerCase() === remoteHost && remoteAccessReady;
   if ((!localHttp && !remoteHttps) || base.username || base.password || base.search || base.hash) {
     return { error: "VoiceStudio must use local loopback HTTP or an allowlisted HTTPS hostname protected by Cloudflare Access service-token credentials." };
   }
