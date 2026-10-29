@@ -849,3 +849,19 @@ body {
   .history-card-meta { align-items:flex-start; flex-direction:column; }
   .history-card-meta time { text-align:left; }
 }
+
+
+/* Saved history selection and deletion controls */
+.history-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; }
+.history-delete-selected:disabled, .history-delete-all:disabled { opacity:.45; cursor:not-allowed; }
+.history-delete-all { border-color:rgba(255,130,130,.32)!important; color:#ffb6aa!important; }
+.history-select-all, .history-card-select { display:flex; align-items:center; gap:9px; color:#a9bfcb; font-size:.82rem; cursor:pointer; }
+.history-select-all { width:fit-content; margin:0 0 16px 2px; }
+.history-select-all input, .history-card-select input { width:16px; height:16px; accent-color:#61e5b5; cursor:pointer; }
+.history-card-select { margin-bottom:13px; }
+.history-card-select span { font-size:.75rem; }
+.history-card-selected { border-color:rgba(97,229,181,.62); box-shadow:0 0 0 1px rgba(97,229,181,.12),0 10px 28px rgba(0,0,0,.16); }
+@media(max-width:680px) {
+  .history-actions { width:100%; justify-content:flex-start; }
+  .history-actions button { flex:1 1 auto; }
+}
