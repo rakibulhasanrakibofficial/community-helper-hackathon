@@ -348,7 +348,7 @@ function HeroArt() {
   );
 }
 
-function ResultView({ answer, problem, onFollowUp, onListen, onCopy, onPrint, voiceStatus }) {
+function ResultView({ answer, problem, onFollowUp, onListen, onVoiceStudioSpeak, voiceStudioTtsBusy, voiceStudioTtsAudio, voiceStudioTtsMessage, voiceStudioAudioRef, onCopy, onPrint, voiceStatus }) {
   const plan = parsePlan(answer);
   const urgent = /immediate danger|life-threatening|electrocution|active fire|gas leak|severe flooding|serious injury|urgent emergency|তাৎক্ষণিক বিপদ|জীবন-ঝুঁকি|জরুরি বিপদ|বৈদ্যুতিক শক|গ্যাস লিক|ভয়াবহ বন্যা|গুরুতর আঘাত/i.test(answer);
   const low = /minor issue|low risk|routine maintenance|non-urgent|কম ঝুঁকি|সামান্য সমস্যা|জরুরি নয়|জরুরি নয়/i.test(answer);
@@ -378,7 +378,9 @@ function ResultView({ answer, problem, onFollowUp, onListen, onCopy, onPrint, vo
       <details className="full-answer"><summary><span>{plan.bangla ? "সম্পূর্ণ বিশ্লেষণ দেখুন" : "Read the full AI response"}</span><span className="summary-plus">+</span></summary><div className="full-answer-content">{answer.split(/\r?\n/).filter(line => line.trim()).map((line, index) => { const clean = line.trim(); const isHeading = /^#{1,6}\s|^\*\*.+\*\*:?$/.test(clean); const isList = /^\s*(?:\d+[.)]|[-*])\s+/.test(clean); const content = stripMarkup(clean); return isHeading ? <h4 key={index}>{content.replace(/:$/, "")}</h4> : isList ? <p className="answer-list-line" key={index}><span>•</span>{content}</p> : <p key={index}>{clean.replace(/\*\*/g, "")}</p>; })}</div></details>
       <div className="result-toolbar">
         <div className="follow-up-actions"><span>CONTINUE EXPLORING</span><button onClick={() => onFollowUp("Help me prioritize the next steps.")} type="button">Prioritize actions ↗</button><button onClick={() => onFollowUp("What safety precautions should residents take?")} type="button">Safety precautions ↗</button><button onClick={() => onFollowUp("How can residents report this issue responsibly?")} type="button">How to report ↗</button></div>
-        <div className="result-buttons"><button className="button button-dark" onClick={onListen} type="button">◖ Listen</button><button className="button button-dark" onClick={onCopy} type="button">▣ Copy plan</button><button className="button button-dark" onClick={onPrint} type="button">↳ Save PDF</button></div>
+        <div className="result-buttons"><button className="button button-dark" onClick={onListen} type="button">◖ Browser read-aloud</button><button className="button button-dark" onClick={onVoiceStudioSpeak} type="button" disabled={voiceStudioTtsBusy}>{voiceStudioTtsBusy ? "Generating audio…" : "♫ VoiceStudio TTS"}</button><button className="button button-dark" onClick={onCopy} type="button">▣ Copy plan</button><button className="button button-dark" onClick={onPrint} type="button">↳ Save PDF</button></div>
+        {voiceStudioTtsMessage && <p className="micro-status" aria-live="polite">{voiceStudioTtsMessage}</p>}
+        {voiceStudioTtsAudio && <audio className="voicestudio-audio-player" ref={voiceStudioAudioRef} controls src={voiceStudioTtsAudio} aria-label="VoiceStudio generated narration" />}
         {voiceStatus && <p className="micro-status" aria-live="polite">{voiceStatus}</p>}
       </div>
     </motion.section>
@@ -398,11 +400,39 @@ export default function App() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState([]);
   const [historyDeleteBusy, setHistoryDeleteBusy] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("Voice input is available in supported browsers.");
+  const [voiceStudioStatus, setVoiceStudioStatus] = useState({ checking: true, connected: false, version: "", message: "Checking local VoiceStudio…" });
   const [voiceLanguage, setVoiceLanguage] = useState("en-US");
+  const [voiceStudioTtsBusy, setVoiceStudioTtsBusy] = useState(false);
+  const [voiceStudioTtsAudio, setVoiceStudioTtsAudio] = useState("");
+  const [voiceStudioTtsMessage, setVoiceStudioTtsMessage] = useState("");
+  const [transcriptionFile, setTranscriptionFile] = useState(null);
+  const [transcriptionBusy, setTranscriptionBusy] = useState(false);
+  const [transcriptionText, setTranscriptionText] = useState("");
+  const [transcriptionMessage, setTranscriptionMessage] = useState("");
+  const [transcriptionError, setTranscriptionError] = useState("");
+  const voiceStudioAudioRef = useRef(null);
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
   const inputBeforeVoice = useRef("");
   const problemRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/voicestudio/status")
+      .then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || data.error || "Could not check VoiceStudio status.");
+        return data;
+      })
+      .then(data => { if (active) setVoiceStudioStatus({ checking: false, ...data }); })
+      .catch(error => { if (active) setVoiceStudioStatus({ checking: false, connected: false, version: "", message: error.message || "Could not check VoiceStudio status." }); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!voiceStudioTtsAudio || !voiceStudioAudioRef.current) return;
+    voiceStudioAudioRef.current.play().catch(() => setVoiceStudioTtsMessage("Audio is ready. Press play to listen."));
+  }, [voiceStudioTtsAudio]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -625,10 +655,68 @@ export default function App() {
     const voices = window.speechSynthesis.getVoices();
     const desired = bangla ? "bn" : utterance.lang.slice(0, 2).toLowerCase();
     utterance.voice = voices.find(voice => voice.lang.toLowerCase().startsWith(desired)) || null;
-    utterance.onstart = () => setVoiceStatus("Reading the AI response aloud.");
+    utterance.onstart = () => setVoiceStatus("Reading the AI response aloud with browser speech.");
     utterance.onend = () => setVoiceStatus("Finished reading the response.");
     utterance.onerror = () => setVoiceStatus("Speech playback failed. Check the voices available on your device.");
     window.speechSynthesis.speak(utterance);
+  };
+
+  const speakWithVoiceStudio = async () => {
+    if (!answer.trim()) return;
+    setVoiceStudioTtsBusy(true);
+    setVoiceStudioTtsMessage("");
+    setVoiceStudioTtsAudio("");
+    try {
+      const response = await fetch("/api/voicestudio/speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: answer })
+      });
+      const contentType = response.headers.get("content-type") || "";
+      if (!response.ok || contentType.includes("application/json")) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "VoiceStudio could not generate audio. Check its installed model.");
+      }
+      const blob = await response.blob();
+      if (!blob.size) throw new Error("VoiceStudio returned an empty audio file.");
+      setVoiceStudioTtsAudio(URL.createObjectURL(blob));
+      setVoiceStudioTtsMessage("VoiceStudio audio generated.");
+    } catch (error) {
+      setVoiceStudioTtsMessage(error.message || "VoiceStudio speech generation failed.");
+    } finally {
+      setVoiceStudioTtsBusy(false);
+    }
+  };
+
+  const transcribeWithVoiceStudio = async () => {
+    if (!transcriptionFile) {
+      setTranscriptionError("Choose an audio file first.");
+      return;
+    }
+    setTranscriptionBusy(true);
+    setTranscriptionError("");
+    setTranscriptionMessage("");
+    setTranscriptionText("");
+    try {
+      const response = await fetch("/api/voicestudio/transcribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": transcriptionFile.type || "application/octet-stream",
+          "X-File-Name": encodeURIComponent(transcriptionFile.name)
+        },
+        body: transcriptionFile
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "VoiceStudio transcription failed.");
+      const transcript = typeof data === "string" ? data : data.text || data.transcript || "";
+      if (!transcript.trim()) throw new Error("VoiceStudio returned no transcript text.");
+      setTranscriptionText(transcript.trim());
+      setTranscriptionMessage("Transcription complete.");
+    } catch (error) {
+      setTranscriptionError(error.message || "Could not transcribe this audio file.");
+    } finally {
+      setTranscriptionBusy(false);
+    }
   };
 
   const copyPlan = async () => {
@@ -687,7 +775,7 @@ export default function App() {
 
         <AnimatePresence mode="wait">
           {busy && <motion.div className="loading-card" key="loading" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}><motion.div className="loading-symbol" animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>✳</motion.div><div><strong>Putting the pieces together…</strong><p>Turning your concern into a practical next step.</p></div><div className="loading-bars"><i /><i /><i /></div></motion.div>}
-          {answer && !busy && <ResultView key="answer" answer={answer} problem={problem} onFollowUp={followUp} onListen={listenToAnswer} onCopy={copyPlan} onPrint={() => window.print()} voiceStatus={voiceStatus} />}
+          {answer && !busy && <ResultView key="answer" answer={answer} problem={problem} onFollowUp={followUp} onListen={listenToAnswer} onVoiceStudioSpeak={speakWithVoiceStudio} voiceStudioTtsBusy={voiceStudioTtsBusy} voiceStudioTtsAudio={voiceStudioTtsAudio} voiceStudioTtsMessage={voiceStudioTtsMessage} voiceStudioAudioRef={voiceStudioAudioRef} onCopy={copyPlan} onPrint={() => window.print()} voiceStatus={voiceStatus} />}
         </AnimatePresence>
 
         <section className="history-section" id="saved-history">
@@ -758,6 +846,43 @@ export default function App() {
               </div>
             </>
           )}
+        </section>
+
+        <section className="voicestudio-section" id="voice-studio">
+          <div className="section-intro">
+            <span className="section-kicker">LOCAL VOICE WORKSPACE</span>
+            <h2>More voice tools with <span>VoiceStudio.</span></h2>
+            <p>Connect your local VoiceStudio installation to access its dedicated voice workspace while keeping Community Helper’s existing voice input and read-aloud features.</p>
+          </div>
+          <div className="voicestudio-status-card">
+            <div className={`voicestudio-status-dot ${voiceStudioStatus.connected ? "is-connected" : ""}`} aria-hidden="true" />
+            <div className="voicestudio-status-copy">
+              <strong>{voiceStudioStatus.checking ? "Checking VoiceStudio…" : voiceStudioStatus.connected ? `VoiceStudio connected${voiceStudioStatus.version ? ` · v${voiceStudioStatus.version}` : ""}` : "VoiceStudio not detected"}</strong>
+              <p>{voiceStudioStatus.checking ? "Checking the local service and discovering API capabilities." : voiceStudioStatus.message || (voiceStudioStatus.connected ? "Local API reachable." : "Start VoiceStudio on this same computer.")} {voiceStudioStatus.connected ? `TTS API: ${voiceStudioStatus.ttsAvailable ? "available" : "not detected"} · Transcription API: ${voiceStudioStatus.transcriptionAvailable ? "available" : "not detected"}` : ""}</p>
+            </div>
+            <button className="button button-submit voicestudio-open" type="button" onClick={() => window.open("http://127.0.0.1:3900/", "_blank", "noopener,noreferrer")}>Open VoiceStudio ↗</button>
+          </div>
+          <div className="voicestudio-tools-grid">
+            <article className="voicestudio-tool-card">
+              <div className="voicestudio-tool-heading"><span className="voicestudio-tool-icon">♫</span><div><h3>AI action-plan narration</h3><p>Generate and play an audio version of your latest AI response.</p></div></div>
+              <button className="button button-submit" type="button" onClick={speakWithVoiceStudio} disabled={!answer.trim() || !voiceStudioStatus.connected || !voiceStudioStatus.ttsAvailable || voiceStudioTtsBusy}>{voiceStudioTtsBusy ? "Generating narration…" : "Generate narration from latest plan"}</button>
+              {!answer.trim() && <p className="voicestudio-inline-note">Generate an action plan first to enable narration.</p>}
+              {answer.trim() && (!voiceStudioStatus.connected || !voiceStudioStatus.ttsAvailable) && <p className="voicestudio-inline-note">VoiceStudio TTS API is not currently available. Browser read-aloud remains available above.</p>}
+              {voiceStudioTtsMessage && <p className="voicestudio-inline-note" aria-live="polite">{voiceStudioTtsMessage}</p>}
+              {voiceStudioTtsAudio && <audio className="voicestudio-audio-player" ref={voiceStudioAudioRef} controls src={voiceStudioTtsAudio} aria-label="VoiceStudio generated narration" />}
+            </article>
+            <article className="voicestudio-tool-card">
+              <div className="voicestudio-tool-heading"><span className="voicestudio-tool-icon">⌁</span><div><h3>Audio transcription</h3><p>Upload an audio clip and transcribe it with an available speech-recognition model.</p></div></div>
+              <label className="voicestudio-file-label" htmlFor="voicestudio-audio-file">Choose audio file (max 20 MB)</label>
+              <input id="voicestudio-audio-file" type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.webm" onChange={event => { const file = event.target.files?.[0] || null; setTranscriptionFile(file); setTranscriptionText(""); setTranscriptionError(""); setTranscriptionMessage(file && file.size > 20 * 1024 * 1024 ? "File exceeds the 20 MB limit." : ""); }} />
+              {transcriptionFile && <p className="voicestudio-inline-note">{transcriptionFile.name} · {(transcriptionFile.size / (1024 * 1024)).toFixed(2)} MB</p>}
+              <button className="button button-submit" type="button" onClick={transcribeWithVoiceStudio} disabled={!transcriptionFile || transcriptionFile.size > 20 * 1024 * 1024 || !voiceStudioStatus.connected || !voiceStudioStatus.transcriptionAvailable || transcriptionBusy}>{transcriptionBusy ? "Transcribing audio…" : "Transcribe audio"}</button>
+              {transcriptionError && <p className="voicestudio-inline-error" role="alert">{transcriptionError}</p>}
+              {transcriptionMessage && <p className="voicestudio-inline-note" aria-live="polite">{transcriptionMessage}</p>}
+              {transcriptionText && <><label className="voicestudio-file-label" htmlFor="voicestudio-transcript">Transcript</label><textarea id="voicestudio-transcript" className="voicestudio-transcript" value={transcriptionText} readOnly /><button className="button button-outline" type="button" onClick={() => navigator.clipboard.writeText(transcriptionText).then(() => setTranscriptionMessage("Transcript copied.")).catch(() => setTranscriptionMessage("Copy was blocked by the browser."))}>Copy transcript</button></>}
+            </article>
+          </div>
+          <p className="voicestudio-disclaimer">VoiceStudio is a separate local service. TTS and transcription require compatible API endpoints and installed models. Models are never downloaded automatically. Browser speech features remain available as a fallback.</p>
         </section>
 
         <section className="how-section" id="how-it-works">
