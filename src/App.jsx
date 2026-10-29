@@ -415,13 +415,40 @@ export default function App() {
   const problemRef = useRef(null);
   const voiceStudioAudioRef = useRef(null);
 
+  const refreshVoiceStudioStatus = async () => {
+    setVoiceStudioStatus(current => ({ ...current, checking: true }));
+    try {
+      const response = await fetch("/api/voicestudio/status", { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not check VoiceStudio status.");
+      setVoiceStudioStatus({
+        checking: false,
+        connected: Boolean(data.connected),
+        ttsReady: Boolean(data.ttsReady),
+        sttReady: Boolean(data.sttReady),
+        ttsMessage: data.ttsMessage || "VoiceStudio speech is unavailable.",
+        sttMessage: data.sttMessage || "VoiceStudio transcription is unavailable.",
+        openUrl: data.openUrl || "",
+        version: data.version || "",
+        message: data.message || ""
+      });
+    } catch {
+      setVoiceStudioStatus({
+        checking: false,
+        connected: false,
+        ttsReady: false,
+        sttReady: false,
+        ttsMessage: "Could not check VoiceStudio speech readiness.",
+        sttMessage: "Could not check VoiceStudio transcription readiness.",
+        openUrl: "",
+        version: "",
+        message: "Could not check VoiceStudio status."
+      });
+    }
+  };
+
   useEffect(() => {
-    let active = true;
-    fetch("/api/voicestudio/status")
-      .then(response => response.json())
-      .then(data => { if (active) setVoiceStudioStatus({ checking: false, connected: Boolean(data.connected), ttsReady: Boolean(data.ttsReady), sttReady: Boolean(data.sttReady), ttsMessage: data.ttsMessage || "VoiceStudio speech is unavailable.", sttMessage: data.sttMessage || "VoiceStudio transcription is unavailable.", openUrl: data.openUrl || "", version: data.version || "", message: data.message || "" }); })
-      .catch(() => { if (active) setVoiceStudioStatus({ checking: false, connected: false, ttsReady: false, sttReady: false, ttsMessage: "Could not check VoiceStudio speech readiness.", sttMessage: "Could not check VoiceStudio transcription readiness.", openUrl: "", version: "", message: "Could not check VoiceStudio status." }); });
-    return () => { active = false; };
+    refreshVoiceStudioStatus();
   }, []);
 
   useEffect(() => {
@@ -861,7 +888,10 @@ export default function App() {
               <strong>{voiceStudioStatus.checking ? "Checking VoiceStudio…" : voiceStudioStatus.connected ? `VoiceStudio connected${voiceStudioStatus.version ? ` · v${voiceStudioStatus.version}` : ""}` : "VoiceStudio not detected"}</strong>
               <p>{voiceStudioStatus.checking ? "Checking the local service and installed model readiness on this device." : voiceStudioStatus.connected ? `${voiceStudioStatus.ttsReady ? "Text-to-speech ready." : voiceStudioStatus.ttsMessage} ${voiceStudioStatus.sttReady ? "Audio transcription ready." : voiceStudioStatus.sttMessage}` : `${voiceStudioStatus.message || "Start VoiceStudio on this same computer, then refresh this status."} This local connection is not available to a remote deployment automatically.`}</p>
             </div>
-            <button className="button button-submit voicestudio-open" type="button" onClick={() => window.open(voiceStudioStatus.openUrl || "http://127.0.0.1:3900/", "_blank", "noopener,noreferrer")}>Open VoiceStudio ↗</button>
+            <div className="voicestudio-status-actions">
+              <button className="button button-outline" type="button" onClick={refreshVoiceStudioStatus} disabled={voiceStudioStatus.checking}>{voiceStudioStatus.checking ? "Checking…" : "↻ Refresh status"}</button>
+              <button className="button button-submit voicestudio-open" type="button" onClick={() => window.open(voiceStudioStatus.openUrl || "http://127.0.0.1:3900/", "_blank", "noopener,noreferrer")}>Open VoiceStudio ↗</button>
+            </div>
           </div>
           <form className="voicestudio-upload-panel" onSubmit={transcribeWithVoiceStudio}>
             <div>
