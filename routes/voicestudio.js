@@ -32,6 +32,15 @@ function resolveBaseUrl(configuredUrl) {
   return { base };
 }
 
+function accessHeaders(base, headers = {}) {
+  const result = { ...headers };
+  if (!["127.0.0.1", "localhost", "::1", "[::1]"].includes(base.hostname.toLowerCase())) {
+    result["CF-Access-Client-Id"] = process.env.VOICESTUDIO_ACCESS_CLIENT_ID;
+    result["CF-Access-Client-Secret"] = process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET;
+  }
+  return result;
+}
+
 function withTimeout(fetchImpl, url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const signal = AbortSignal.timeout(timeoutMs);
   return fetchImpl(url, { ...options, redirect: "error", signal })
