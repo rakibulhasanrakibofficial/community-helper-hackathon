@@ -22,8 +22,12 @@ function resolveBaseUrl(configuredUrl) {
 
   const host = base.hostname.toLowerCase();
   const loopback = host === "127.0.0.1" || host === "localhost" || host === "[::1]" || host === "::1";
-  if (base.protocol !== "http:" || !loopback || base.username || base.password) {
-    return { error: "Only a local HTTP VoiceStudio service is supported by this bridge." };
+  const remoteHost = typeof process.env.VOICESTUDIO_ALLOWED_HOST === "string" ? process.env.VOICESTUDIO_ALLOWED_HOST.trim().toLowerCase() : "";
+  const remoteAccessReady = Boolean(process.env.VOICESTUDIO_ACCESS_CLIENT_ID && process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET);
+  const localHttp = base.protocol === "http:" && loopback;
+  const remoteHttps = base.protocol === "https:" && !loopback && remoteHost && base.hostname.toLowerCase() === remoteHost && remoteAccessReady;
+  if ((!localHttp && !remoteHttps) || base.username || base.password || base.search || base.hash) {
+    return { error: "VoiceStudio must use local loopback HTTP or an allowlisted HTTPS hostname protected by Cloudflare Access service-token credentials." };
   }
   return { base };
 }
