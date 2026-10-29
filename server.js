@@ -23,6 +23,34 @@ app.disable("x-powered-by");
 app.use(express.json({ limit: "30kb" }));
 app.use(express.static(frontendPath));
 
+app.get("/api/voicestudio/status", async (_req, res) => {
+  // This bridge intentionally supports only a local VoiceStudio service.
+  // Never turn this into an arbitrary-URL proxy: that could expose internal services.
+  const configured = process.env.VOICESTUDIO_URL || "http://127.0.0.1:3900";
+  let base;
+  try {
+    base = new URL(configured);
+  } catch {
+    return res.json({ connected: false, message: "VoiceStudio URL is invalid." });
+  }
+  if (!["127.0.0.1", "localhost", "::1"].includes(base.hostname) || base.protocol !== "http:") {
+    return res.json({ connected: false, message: "Only a local HTTP VoiceStudio service is supported by this bridge." });
+  }
+  try {
+    const response = await fetch(new URL("/health", base), { signal: AbortSignal.timeout(2500) });
+    if (!response.ok) return res.json({ connected: false, message: "VoiceStudio health check failed." });
+    const data = await response.json();
+    return res.json({
+      connected: data.status === "ok" || data.ok === true,
+      version: typeof data.version === "string" ? data.version : "",
+      device: typeof data.device === "string" ? data.device : "",
+      message: data.status === "ok" || data.ok === true ? "Local VoiceStudio is responding." : "VoiceStudio returned an unexpected health status."
+    });
+  } catch {
+    return res.json({ connected: false, message: "VoiceStudio is not reachable on this device." });
+  }
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
