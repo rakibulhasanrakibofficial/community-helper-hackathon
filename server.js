@@ -3,6 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const mongoose = require("mongoose");
+const HelpRequest = require("./models/HelpRequest");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,8 +28,30 @@ app.get("/api/health", (_req, res) => {
     ok: true,
     service: "Community Helper AI",
     provider: "Ollama Cloud",
-    model: MODEL
+    model: MODEL,
+    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
   });
+});
+
+app.get("/api/history", async (_req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      error: "Database is not connected yet."
+    });
+  }
+
+  try {
+    const requests = await HelpRequest.find()
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .select("problem answer provider model createdAt")
+      .lean();
+
+    return res.json({ requests });
+  } catch (error) {
+    console.error("Could not load help history:", error.message);
+    return res.status(500).json({ error: "Could not load saved history." });
+  }
 });
 
 app.post("/api/help", async (req, res) => {
@@ -154,10 +178,29 @@ Prioritize public safety. Never invent official contacts, claim an issue has bee
       });
     }
 
+    let requestId = null;
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const savedRequest = await HelpRequest.create({
+          problem: problem.trim(),
+          answer,
+          provider: "Ollama Cloud",
+          model: MODEL
+        });
+        requestId = savedRequest._id;
+      } catch (saveError) {
+        // Keep the AI feature available if database persistence temporarily fails.
+        console.error("Could not save help request to MongoDB:", saveError.message);
+      }
+    } else {
+      console.warn("MongoDB is not connected; this help request was not saved.");
+    }
+
     return res.json({
       answer,
       provider: "Ollama Cloud",
-      model: MODEL
+      model: MODEL,
+      requestId
     });
   } catch (error) {
     console.error("Ollama request error:", error.message);
@@ -171,8 +214,26 @@ Prioritize public safety. Never invent official contacts, claim an issue has bee
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Community Helper AI running on port ${PORT}`);
-  console.log(`Serving frontend from: ${frontendPath}`);
-  console.log(`Provider: Ollama Cloud | Model: ${MODEL}`);
-});
+async function startServer() {
+  const mongoUri = process.env.MONGODB_URI;
+
+  if (mongoUri) {
+    try {
+      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000 });
+      console.log("MongoDB connected successfully");
+    } catch (error) {
+      console.error("MongoDB connection failed:", error.message);
+      console.warn("Starting API without database; saved history is unavailable.");
+    }
+  } else {
+    console.warn("MONGODB_URI is not set. Starting without MongoDB.");
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Community Helper AI running on port ${PORT}`);
+    console.log(`Serving frontend from: ${frontendPath}`);
+    console.log(`Provider: Ollama Cloud | Model: ${MODEL}`);
+  });
+}
+
+startServer();
