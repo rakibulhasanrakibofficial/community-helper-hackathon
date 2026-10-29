@@ -812,3 +812,40 @@ body {
   .how-section { padding-top: 42px; padding-bottom: 34px; }
   .site-footer { margin-top: 24px; }
 }
+
+
+/* MongoDB-backed saved request history */
+.history-section {
+  max-width: 1120px;
+  margin: 44px auto 58px;
+  padding: 30px;
+  border: 1px solid rgba(126, 207, 221, .16);
+  border-radius: 26px;
+  background: linear-gradient(145deg, rgba(12, 39, 56, .88), rgba(8, 28, 43, .78));
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .14);
+  color: #eef7fc;
+}
+.history-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:22px; margin-bottom:24px; }
+.history-heading h2 { margin:8px 0 8px; color:#f1f8fc; font-size:clamp(1.5rem, 3vw, 2.1rem); letter-spacing:-.035em; }
+.history-heading p { margin:0; color:#a9bfcb; line-height:1.65; }
+.history-refresh { flex-shrink:0; }
+.history-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.history-card { min-width:0; padding:20px; border:1px solid rgba(126,207,221,.17); border-radius:18px; background:rgba(5,22,35,.62); }
+.history-card-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:13px; color:#77e4d0; font-size:.78rem; }
+.history-card-meta time { color:#8eaab8; text-align:right; font-size:.72rem; }
+.history-card h3 { margin:0 0 12px; color:#edf8fc; font-size:1.03rem; line-height:1.5; overflow-wrap:anywhere; }
+.history-card p { margin:0; color:#b7cbd5; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:7; -webkit-box-orient:vertical; overflow:hidden; }
+.history-use-button { margin-top:16px; padding:8px 12px; border:1px solid rgba(115,221,229,.24); border-radius:10px; background:rgba(35,115,132,.18); color:#8ce9ed; cursor:pointer; font:inherit; font-size:.85rem; }
+.history-use-button:hover { background:rgba(35,115,132,.32); }
+.history-empty { display:grid; justify-items:center; gap:8px; padding:34px 18px; border:1px dashed rgba(126,207,221,.22); border-radius:18px; text-align:center; }
+.history-empty > span { color:#7ee7d5; font-size:1.8rem; }
+.history-empty strong { color:#edf8fc; }
+.history-empty p,.history-message { margin:0; color:#a9bfcb; line-height:1.6; }
+.history-error { color:#ffb9aa; }
+@media(max-width:680px) {
+  .history-section { margin:30px 0 40px; padding:20px 16px; border-radius:20px; }
+  .history-heading { flex-direction:column; }
+  .history-grid { grid-template-columns:1fr; }
+  .history-card-meta { align-items:flex-start; flex-direction:column; }
+  .history-card-meta time { text-align:left; }
+}
