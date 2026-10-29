@@ -395,6 +395,8 @@ export default function App() {
   const [historyItems, setHistoryItems] = useState([]);
   const [historyBusy, setHistoryBusy] = useState(false);
   const [historyError, setHistoryError] = useState("");
+  const [selectedHistoryIds, setSelectedHistoryIds] = useState([]);
+  const [historyDeleteBusy, setHistoryDeleteBusy] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("Voice input is available in supported browsers.");
   const [voiceLanguage, setVoiceLanguage] = useState("en-US");
   const [listening, setListening] = useState(false);
@@ -478,7 +480,10 @@ export default function App() {
       const response = await fetch("/api/history");
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not load saved history.");
-      setHistoryItems(Array.isArray(data.requests) ? data.requests : []);
+      const requests = Array.isArray(data.requests) ? data.requests : [];
+      setHistoryItems(requests);
+      const availableIds = new Set(requests.map(item => item._id));
+      setSelectedHistoryIds(current => current.filter(id => availableIds.has(id)));
     } catch (historyRequestError) {
       setHistoryError(historyRequestError.message || "Could not load saved history.");
     } finally {
@@ -489,6 +494,59 @@ export default function App() {
   useEffect(() => {
     loadHistory();
   }, []);
+
+  const toggleHistorySelection = id => {
+    setSelectedHistoryIds(current =>
+      current.includes(id) ? current.filter(selectedId => selectedId !== id) : [...current, id]
+    );
+  };
+
+  const toggleAllHistorySelection = () => {
+    setSelectedHistoryIds(current =>
+      historyItems.length > 0 && current.length === historyItems.length
+        ? []
+        : historyItems.map(item => item._id)
+    );
+  };
+
+  const deleteHistory = async scope => {
+    const deletingAll = scope === "all";
+    const ids = deletingAll ? [] : selectedHistoryIds;
+    if (!deletingAll && ids.length === 0) {
+      setHistoryError("Select at least one history item to delete.");
+      return;
+    }
+
+    const confirmation = deletingAll
+      ? "Delete ALL saved community history? This cannot be undone."
+      : `Delete ${ids.length} selected history item(s)? This cannot be undone.`;
+    if (!window.confirm(confirmation)) return;
+
+    setHistoryDeleteBusy(true);
+    setHistoryError("");
+    try {
+      const response = await fetch("/api/history", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(deletingAll ? { all: true } : { ids })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not delete saved history.");
+
+      if (deletingAll) {
+        setHistoryItems([]);
+      } else {
+        const removedIds = new Set(ids);
+        setHistoryItems(current => current.filter(item => !removedIds.has(item._id)));
+      }
+      setSelectedHistoryIds([]);
+    } catch (deleteError) {
+      setHistoryError(deleteError.message || "Could not delete saved history.");
+    } finally {
+      setHistoryDeleteBusy(false);
+    }
+  };
+
 
   const reset = () => {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -639,9 +697,17 @@ export default function App() {
               <h2>Saved community history</h2>
               <p>Recent AI action plans saved in MongoDB Atlas on this project’s server.</p>
             </div>
-            <button className="button button-outline history-refresh" type="button" onClick={loadHistory} disabled={historyBusy}>
-              {historyBusy ? "Loading…" : "↻ Refresh history"}
-            </button>
+            <div className="history-actions">
+              <button className="button button-outline history-refresh" type="button" onClick={loadHistory} disabled={historyBusy || historyDeleteBusy}>
+                {historyBusy ? "Loading…" : "↻ Refresh history"}
+              </button>
+              <button className="button button-outline history-delete-selected" type="button" onClick={() => deleteHistory("selected")} disabled={historyDeleteBusy || selectedHistoryIds.length === 0}>
+                {historyDeleteBusy ? "Deleting…" : `Delete selected (${selectedHistoryIds.length})`}
+              </button>
+              <button className="button button-outline history-delete-all" type="button" onClick={() => deleteHistory("all")} disabled={historyDeleteBusy || historyItems.length === 0}>
+                Delete all
+              </button>
+            </div>
           </div>
           {historyError && <p className="history-message history-error" role="alert">{historyError}</p>}
           {!historyError && !historyBusy && historyItems.length === 0 && (
@@ -653,10 +719,29 @@ export default function App() {
           )}
           {historyBusy && historyItems.length === 0 && <p className="history-message">Loading saved requests…</p>}
           {historyItems.length > 0 && (
-            <div className="history-grid">
-              {historyItems.map(item => (
-                <article className="history-card" key={item._id}>
-                  <div className="history-card-meta">
+            <>
+              <label className="history-select-all">
+                <input
+                  type="checkbox"
+                  checked={historyItems.length > 0 && selectedHistoryIds.length === historyItems.length}
+                  onChange={toggleAllHistorySelection}
+                  disabled={historyDeleteBusy}
+                />
+                <span>Select all {historyItems.length} saved requests</span>
+              </label>
+              <div className="history-grid">
+                {historyItems.map(item => (
+                  <article className={`history-card${selectedHistoryIds.includes(item._id) ? " history-card-selected" : ""}`} key={item._id}>
+                    <label className="history-card-select">
+                      <input
+                        type="checkbox"
+                        checked={selectedHistoryIds.includes(item._id)}
+                        onChange={() => toggleHistorySelection(item._id)}
+                        disabled={historyDeleteBusy}
+                      />
+                      <span>Select this request</span>
+                    </label>
+                    <div className="history-card-meta">
                     <span>{item.provider || "AI assistant"}</span>
                     <time dateTime={item.createdAt}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : "Date unavailable"}</time>
                   </div>
@@ -669,8 +754,9 @@ export default function App() {
                     document.getElementById("get-started")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}>View this plan ↑</button>
                 </article>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </section>
 
