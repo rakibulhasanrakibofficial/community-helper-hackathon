@@ -348,7 +348,7 @@ function HeroArt() {
   );
 }
 
-function ResultView({ answer, problem, onFollowUp, onListen, onVoiceStudioSpeak, voiceStudioTtsBusy, voiceStudioTtsAudio, voiceStudioTtsMessage, voiceStudioAudioRef, onCopy, onPrint, voiceStatus }) {
+function ResultView({ answer, problem, onFollowUp, onListen, onVoiceStudioSpeak, voiceStudioTtsReady, voiceStudioTtsMessage, voiceStudioTtsBusy, voiceStudioTtsStatus, voiceStudioAudioUrl, voiceStudioAudioRef, onVoiceStudioAudioPlay, onVoiceStudioAudioError, onCopy, onPrint, voiceStatus }) {
   const plan = parsePlan(answer);
   const urgent = /immediate danger|life-threatening|electrocution|active fire|gas leak|severe flooding|serious injury|urgent emergency|তাৎক্ষণিক বিপদ|জীবন-ঝুঁকি|জরুরি বিপদ|বৈদ্যুতিক শক|গ্যাস লিক|ভয়াবহ বন্যা|গুরুতর আঘাত/i.test(answer);
   const low = /minor issue|low risk|routine maintenance|non-urgent|কম ঝুঁকি|সামান্য সমস্যা|জরুরি নয়|জরুরি নয়/i.test(answer);
@@ -378,10 +378,10 @@ function ResultView({ answer, problem, onFollowUp, onListen, onVoiceStudioSpeak,
       <details className="full-answer"><summary><span>{plan.bangla ? "সম্পূর্ণ বিশ্লেষণ দেখুন" : "Read the full AI response"}</span><span className="summary-plus">+</span></summary><div className="full-answer-content">{answer.split(/\r?\n/).filter(line => line.trim()).map((line, index) => { const clean = line.trim(); const isHeading = /^#{1,6}\s|^\*\*.+\*\*:?$/.test(clean); const isList = /^\s*(?:\d+[.)]|[-*])\s+/.test(clean); const content = stripMarkup(clean); return isHeading ? <h4 key={index}>{content.replace(/:$/, "")}</h4> : isList ? <p className="answer-list-line" key={index}><span>•</span>{content}</p> : <p key={index}>{clean.replace(/\*\*/g, "")}</p>; })}</div></details>
       <div className="result-toolbar">
         <div className="follow-up-actions"><span>CONTINUE EXPLORING</span><button onClick={() => onFollowUp("Help me prioritize the next steps.")} type="button">Prioritize actions ↗</button><button onClick={() => onFollowUp("What safety precautions should residents take?")} type="button">Safety precautions ↗</button><button onClick={() => onFollowUp("How can residents report this issue responsibly?")} type="button">How to report ↗</button></div>
-        <div className="result-buttons"><button className="button button-dark" onClick={onListen} type="button">◖ Browser read-aloud</button><button className="button button-dark" onClick={onVoiceStudioSpeak} type="button" disabled={voiceStudioTtsBusy}>{voiceStudioTtsBusy ? "Generating audio…" : "♫ VoiceStudio TTS"}</button><button className="button button-dark" onClick={onCopy} type="button">▣ Copy plan</button><button className="button button-dark" onClick={onPrint} type="button">↳ Save PDF</button></div>
-        {voiceStudioTtsMessage && <p className="micro-status" aria-live="polite">{voiceStudioTtsMessage}</p>}
-        {voiceStudioTtsAudio && <audio className="voicestudio-audio-player" ref={voiceStudioAudioRef} controls src={voiceStudioTtsAudio} aria-label="VoiceStudio generated narration" />}
+        <div className="result-buttons"><button className="button button-dark" onClick={onListen} type="button">◖ Listen</button><button className="button button-dark" onClick={onVoiceStudioSpeak} type="button" disabled={!voiceStudioTtsReady || voiceStudioTtsBusy || answer.trim().length > 4096} title={voiceStudioTtsMessage}>{voiceStudioTtsBusy ? "Generating…" : "Read with VoiceStudio"}</button><button className="button button-dark" onClick={onCopy} type="button">▣ Copy plan</button><button className="button button-dark" onClick={onPrint} type="button">↳ Save PDF</button></div>
         {voiceStatus && <p className="micro-status" aria-live="polite">{voiceStatus}</p>}
+        <p className="micro-status" aria-live="polite">{voiceStudioTtsStatus || (answer.trim().length > 4096 ? "VoiceStudio supports up to 4,096 characters per speech request. Use browser Listen for longer responses." : voiceStudioTtsMessage)}</p>
+        {voiceStudioAudioUrl && <audio className="voicestudio-audio-player" ref={voiceStudioAudioRef} controls src={voiceStudioAudioUrl} onPlay={onVoiceStudioAudioPlay} onError={onVoiceStudioAudioError} aria-label="VoiceStudio generated speech" />}
       </div>
     </motion.section>
   );
@@ -400,39 +400,70 @@ export default function App() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState([]);
   const [historyDeleteBusy, setHistoryDeleteBusy] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("Voice input is available in supported browsers.");
-  const [voiceStudioStatus, setVoiceStudioStatus] = useState({ checking: true, connected: false, version: "", message: "Checking local VoiceStudio…" });
-  const [voiceLanguage, setVoiceLanguage] = useState("en-US");
+  const [voiceStudioStatus, setVoiceStudioStatus] = useState({ checking: true, connected: false, ttsReady: false, sttReady: false, ttsMessage: "Checking VoiceStudio speech readiness…", sttMessage: "Checking VoiceStudio transcription readiness…", openUrl: "", version: "", message: "Checking local VoiceStudio…" });
   const [voiceStudioTtsBusy, setVoiceStudioTtsBusy] = useState(false);
-  const [voiceStudioTtsAudio, setVoiceStudioTtsAudio] = useState("");
-  const [voiceStudioTtsMessage, setVoiceStudioTtsMessage] = useState("");
-  const [transcriptionFile, setTranscriptionFile] = useState(null);
-  const [transcriptionBusy, setTranscriptionBusy] = useState(false);
-  const [transcriptionText, setTranscriptionText] = useState("");
-  const [transcriptionMessage, setTranscriptionMessage] = useState("");
-  const [transcriptionError, setTranscriptionError] = useState("");
-  const voiceStudioAudioRef = useRef(null);
+  const [voiceStudioTtsStatus, setVoiceStudioTtsStatus] = useState("");
+  const [voiceStudioAudioUrl, setVoiceStudioAudioUrl] = useState("");
+  const [voiceStudioTranscriptionFile, setVoiceStudioTranscriptionFile] = useState(null);
+  const [voiceStudioTranscriptionBusy, setVoiceStudioTranscriptionBusy] = useState(false);
+  const [voiceStudioTranscriptionStatus, setVoiceStudioTranscriptionStatus] = useState("");
+  const [voiceStudioTranscription, setVoiceStudioTranscription] = useState("");
+  const [voiceLanguage, setVoiceLanguage] = useState("en-US");
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
   const inputBeforeVoice = useRef("");
   const problemRef = useRef(null);
+  const voiceStudioAudioRef = useRef(null);
+
+  const refreshVoiceStudioStatus = async () => {
+    setVoiceStudioStatus(current => ({ ...current, checking: true }));
+    try {
+      const response = await fetch("/api/voicestudio/status", { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not check VoiceStudio status.");
+      setVoiceStudioStatus({
+        checking: false,
+        connected: Boolean(data.connected),
+        ttsReady: Boolean(data.ttsReady),
+        sttReady: Boolean(data.sttReady),
+        ttsMessage: data.ttsMessage || "VoiceStudio speech is unavailable.",
+        sttMessage: data.sttMessage || "VoiceStudio transcription is unavailable.",
+        openUrl: data.openUrl || "",
+        version: data.version || "",
+        message: data.message || ""
+      });
+    } catch {
+      setVoiceStudioStatus({
+        checking: false,
+        connected: false,
+        ttsReady: false,
+        sttReady: false,
+        ttsMessage: "Could not check VoiceStudio speech readiness.",
+        sttMessage: "Could not check VoiceStudio transcription readiness.",
+        openUrl: "",
+        version: "",
+        message: "Could not check VoiceStudio status."
+      });
+    }
+  };
 
   useEffect(() => {
-    let active = true;
-    fetch("/api/voicestudio/status")
-      .then(async response => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.message || data.error || "Could not check VoiceStudio status.");
-        return data;
-      })
-      .then(data => { if (active) setVoiceStudioStatus({ checking: false, ...data }); })
-      .catch(error => { if (active) setVoiceStudioStatus({ checking: false, connected: false, version: "", message: error.message || "Could not check VoiceStudio status." }); });
-    return () => { active = false; };
+    refreshVoiceStudioStatus();
   }, []);
 
   useEffect(() => {
-    if (!voiceStudioTtsAudio || !voiceStudioAudioRef.current) return;
-    voiceStudioAudioRef.current.play().catch(() => setVoiceStudioTtsMessage("Audio is ready. Press play to listen."));
-  }, [voiceStudioTtsAudio]);
+    setVoiceStudioAudioUrl("");
+    setVoiceStudioTtsStatus("");
+  }, [answer]);
+
+  useEffect(() => {
+    if (!voiceStudioAudioUrl || !voiceStudioAudioRef.current) return;
+    voiceStudioAudioRef.current.play().catch(() => setVoiceStudioTtsStatus("Audio is ready. Press play in the player to listen."));
+  }, [voiceStudioAudioUrl]);
+
+  useEffect(() => () => {
+    if (voiceStudioAudioUrl) URL.revokeObjectURL(voiceStudioAudioUrl);
+  }, [voiceStudioAudioUrl]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -655,67 +686,64 @@ export default function App() {
     const voices = window.speechSynthesis.getVoices();
     const desired = bangla ? "bn" : utterance.lang.slice(0, 2).toLowerCase();
     utterance.voice = voices.find(voice => voice.lang.toLowerCase().startsWith(desired)) || null;
-    utterance.onstart = () => setVoiceStatus("Reading the AI response aloud with browser speech.");
+    utterance.onstart = () => setVoiceStatus("Reading the AI response aloud.");
     utterance.onend = () => setVoiceStatus("Finished reading the response.");
     utterance.onerror = () => setVoiceStatus("Speech playback failed. Check the voices available on your device.");
     window.speechSynthesis.speak(utterance);
   };
 
   const speakWithVoiceStudio = async () => {
-    if (!answer.trim()) return;
+    if (!voiceStudioStatus.ttsReady) {
+      setVoiceStudioTtsStatus(voiceStudioStatus.ttsMessage || "VoiceStudio speech is unavailable. Browser Listen remains available.");
+      return;
+    }
+    if (answer.trim().length > 4096) {
+      setVoiceStudioTtsStatus("This response is longer than VoiceStudio's 4,096-character request limit. Use browser Listen for the full response.");
+      return;
+    }
+
     setVoiceStudioTtsBusy(true);
-    setVoiceStudioTtsMessage("");
-    setVoiceStudioTtsAudio("");
+    setVoiceStudioTtsStatus("Generating audio with VoiceStudio…");
+    setVoiceStudioAudioUrl("");
     try {
       const response = await fetch("/api/voicestudio/speech", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ input: answer })
       });
-      const contentType = response.headers.get("content-type") || "";
-      if (!response.ok || contentType.includes("application/json")) {
+      if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "VoiceStudio could not generate audio. Check its installed model.");
+        throw new Error(data.error || "VoiceStudio could not generate speech.");
       }
-      const blob = await response.blob();
-      if (!blob.size) throw new Error("VoiceStudio returned an empty audio file.");
-      setVoiceStudioTtsAudio(URL.createObjectURL(blob));
-      setVoiceStudioTtsMessage("VoiceStudio audio generated.");
-    } catch (error) {
-      setVoiceStudioTtsMessage(error.message || "VoiceStudio speech generation failed.");
+      const audio = await response.blob();
+      if (!audio.size) throw new Error("VoiceStudio returned an empty audio file.");
+      setVoiceStudioAudioUrl(URL.createObjectURL(audio));
+      setVoiceStudioTtsStatus("Audio generated. Starting playback…");
+    } catch (requestError) {
+      setVoiceStudioTtsStatus(requestError.message || "VoiceStudio speech is unavailable. Browser Listen remains available.");
     } finally {
       setVoiceStudioTtsBusy(false);
     }
   };
 
-  const transcribeWithVoiceStudio = async () => {
-    if (!transcriptionFile) {
-      setTranscriptionError("Choose an audio file first.");
-      return;
-    }
-    setTranscriptionBusy(true);
-    setTranscriptionError("");
-    setTranscriptionMessage("");
-    setTranscriptionText("");
+  const transcribeWithVoiceStudio = async event => {
+    event.preventDefault();
+    if (!voiceStudioTranscriptionFile || !voiceStudioStatus.sttReady) return;
+    setVoiceStudioTranscriptionBusy(true);
+    setVoiceStudioTranscriptionStatus("Transcribing audio with VoiceStudio…");
+    setVoiceStudioTranscription("");
     try {
-      const response = await fetch("/api/voicestudio/transcribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": transcriptionFile.type || "application/octet-stream",
-          "X-File-Name": encodeURIComponent(transcriptionFile.name)
-        },
-        body: transcriptionFile
-      });
+      const form = new FormData();
+      form.append("audio", voiceStudioTranscriptionFile);
+      const response = await fetch("/api/voicestudio/transcribe", { method: "POST", body: form });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "VoiceStudio transcription failed.");
-      const transcript = typeof data === "string" ? data : data.text || data.transcript || "";
-      if (!transcript.trim()) throw new Error("VoiceStudio returned no transcript text.");
-      setTranscriptionText(transcript.trim());
-      setTranscriptionMessage("Transcription complete.");
-    } catch (error) {
-      setTranscriptionError(error.message || "Could not transcribe this audio file.");
+      if (!response.ok) throw new Error(data.error || "VoiceStudio could not transcribe this file.");
+      setVoiceStudioTranscription(data.text || "");
+      setVoiceStudioTranscriptionStatus(data.text ? "Transcription complete. Review it before using it." : "No speech was detected in this file.");
+    } catch (requestError) {
+      setVoiceStudioTranscriptionStatus(requestError.message || "VoiceStudio transcription is unavailable.");
     } finally {
-      setTranscriptionBusy(false);
+      setVoiceStudioTranscriptionBusy(false);
     }
   };
 
@@ -775,7 +803,7 @@ export default function App() {
 
         <AnimatePresence mode="wait">
           {busy && <motion.div className="loading-card" key="loading" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}><motion.div className="loading-symbol" animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>✳</motion.div><div><strong>Putting the pieces together…</strong><p>Turning your concern into a practical next step.</p></div><div className="loading-bars"><i /><i /><i /></div></motion.div>}
-          {answer && !busy && <ResultView key="answer" answer={answer} problem={problem} onFollowUp={followUp} onListen={listenToAnswer} onVoiceStudioSpeak={speakWithVoiceStudio} voiceStudioTtsBusy={voiceStudioTtsBusy} voiceStudioTtsAudio={voiceStudioTtsAudio} voiceStudioTtsMessage={voiceStudioTtsMessage} voiceStudioAudioRef={voiceStudioAudioRef} onCopy={copyPlan} onPrint={() => window.print()} voiceStatus={voiceStatus} />}
+          {answer && !busy && <ResultView key="answer" answer={answer} problem={problem} onFollowUp={followUp} onListen={listenToAnswer} onVoiceStudioSpeak={speakWithVoiceStudio} voiceStudioTtsReady={voiceStudioStatus.ttsReady} voiceStudioTtsMessage={voiceStudioStatus.checking ? "Checking VoiceStudio readiness…" : voiceStudioStatus.ttsMessage} voiceStudioTtsBusy={voiceStudioTtsBusy} voiceStudioTtsStatus={voiceStudioTtsStatus} voiceStudioAudioUrl={voiceStudioAudioUrl} voiceStudioAudioRef={voiceStudioAudioRef} onVoiceStudioAudioPlay={() => setVoiceStudioTtsStatus("Playing VoiceStudio audio.")} onVoiceStudioAudioError={() => setVoiceStudioTtsStatus("The generated audio could not be played. Try browser Listen or download another supported format in VoiceStudio.")} onCopy={copyPlan} onPrint={() => window.print()} voiceStatus={voiceStatus} />}
         </AnimatePresence>
 
         <section className="history-section" id="saved-history">
@@ -858,31 +886,34 @@ export default function App() {
             <div className={`voicestudio-status-dot ${voiceStudioStatus.connected ? "is-connected" : ""}`} aria-hidden="true" />
             <div className="voicestudio-status-copy">
               <strong>{voiceStudioStatus.checking ? "Checking VoiceStudio…" : voiceStudioStatus.connected ? `VoiceStudio connected${voiceStudioStatus.version ? ` · v${voiceStudioStatus.version}` : ""}` : "VoiceStudio not detected"}</strong>
-              <p>{voiceStudioStatus.checking ? "Checking the local service and discovering API capabilities." : voiceStudioStatus.message || (voiceStudioStatus.connected ? "Local API reachable." : "Start VoiceStudio on this same computer.")} {voiceStudioStatus.connected ? `TTS API: ${voiceStudioStatus.ttsAvailable ? "available" : "not detected"} · Transcription API: ${voiceStudioStatus.transcriptionAvailable ? "available" : "not detected"}` : ""}</p>
+              <p>{voiceStudioStatus.checking ? "Checking the local service and installed model readiness on this device." : voiceStudioStatus.connected ? `${voiceStudioStatus.ttsReady ? "Text-to-speech ready." : voiceStudioStatus.ttsMessage} ${voiceStudioStatus.sttReady ? "Audio transcription ready." : voiceStudioStatus.sttMessage}` : `${voiceStudioStatus.message || "Start VoiceStudio on this same computer, then refresh this status."} This local connection is not available to a remote deployment automatically.`}</p>
             </div>
-            <button className="button button-submit voicestudio-open" type="button" onClick={() => window.open("http://127.0.0.1:3900/", "_blank", "noopener,noreferrer")}>Open VoiceStudio ↗</button>
+            <div className="voicestudio-status-actions">
+              <button className="button button-outline" type="button" onClick={refreshVoiceStudioStatus} disabled={voiceStudioStatus.checking}>{voiceStudioStatus.checking ? "Checking…" : "↻ Refresh status"}</button>
+              <button className="button button-submit voicestudio-open" type="button" onClick={() => window.open(voiceStudioStatus.openUrl || "http://127.0.0.1:3900/", "_blank", "noopener,noreferrer")}>Open VoiceStudio ↗</button>
+            </div>
           </div>
-          <div className="voicestudio-tools-grid">
-            <article className="voicestudio-tool-card">
-              <div className="voicestudio-tool-heading"><span className="voicestudio-tool-icon">♫</span><div><h3>AI action-plan narration</h3><p>Generate and play an audio version of your latest AI response.</p></div></div>
-              <button className="button button-submit" type="button" onClick={speakWithVoiceStudio} disabled={!answer.trim() || !voiceStudioStatus.connected || !voiceStudioStatus.ttsAvailable || voiceStudioTtsBusy}>{voiceStudioTtsBusy ? "Generating narration…" : "Generate narration from latest plan"}</button>
-              {!answer.trim() && <p className="voicestudio-inline-note">Generate an action plan first to enable narration.</p>}
-              {answer.trim() && (!voiceStudioStatus.connected || !voiceStudioStatus.ttsAvailable) && <p className="voicestudio-inline-note">VoiceStudio TTS API is not currently available. Browser read-aloud remains available above.</p>}
-              {voiceStudioTtsMessage && <p className="voicestudio-inline-note" aria-live="polite">{voiceStudioTtsMessage}</p>}
-              {voiceStudioTtsAudio && <audio className="voicestudio-audio-player" ref={voiceStudioAudioRef} controls src={voiceStudioTtsAudio} aria-label="VoiceStudio generated narration" />}
-            </article>
-            <article className="voicestudio-tool-card">
-              <div className="voicestudio-tool-heading"><span className="voicestudio-tool-icon">⌁</span><div><h3>Audio transcription</h3><p>Upload an audio clip and transcribe it with an available speech-recognition model.</p></div></div>
-              <label className="voicestudio-file-label" htmlFor="voicestudio-audio-file">Choose audio file (max 20 MB)</label>
-              <input id="voicestudio-audio-file" type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.webm" onChange={event => { const file = event.target.files?.[0] || null; setTranscriptionFile(file); setTranscriptionText(""); setTranscriptionError(""); setTranscriptionMessage(file && file.size > 20 * 1024 * 1024 ? "File exceeds the 20 MB limit." : ""); }} />
-              {transcriptionFile && <p className="voicestudio-inline-note">{transcriptionFile.name} · {(transcriptionFile.size / (1024 * 1024)).toFixed(2)} MB</p>}
-              <button className="button button-submit" type="button" onClick={transcribeWithVoiceStudio} disabled={!transcriptionFile || transcriptionFile.size > 20 * 1024 * 1024 || !voiceStudioStatus.connected || !voiceStudioStatus.transcriptionAvailable || transcriptionBusy}>{transcriptionBusy ? "Transcribing audio…" : "Transcribe audio"}</button>
-              {transcriptionError && <p className="voicestudio-inline-error" role="alert">{transcriptionError}</p>}
-              {transcriptionMessage && <p className="voicestudio-inline-note" aria-live="polite">{transcriptionMessage}</p>}
-              {transcriptionText && <><label className="voicestudio-file-label" htmlFor="voicestudio-transcript">Transcript</label><textarea id="voicestudio-transcript" className="voicestudio-transcript" value={transcriptionText} readOnly /><button className="button button-outline" type="button" onClick={() => navigator.clipboard.writeText(transcriptionText).then(() => setTranscriptionMessage("Transcript copied.")).catch(() => setTranscriptionMessage("Copy was blocked by the browser."))}>Copy transcript</button></>}
-            </article>
+          <form className="voicestudio-upload-panel" onSubmit={transcribeWithVoiceStudio}>
+            <div>
+              <span className="section-kicker">AUDIO TRANSCRIPTION</span>
+              <h3>Transcribe an audio file</h3>
+              <p>{voiceStudioStatus.checking ? "Checking VoiceStudio transcription readiness…" : voiceStudioStatus.sttMessage} Uploads are sent to the local VoiceStudio service through this app's backend.</p>
+            </div>
+            <label className="voicestudio-file-label">Choose audio file
+              <input type="file" accept=".wav,.mp3,.m4a,.mp4,.aac,.ogg,.oga,.flac,.webm" disabled={!voiceStudioStatus.sttReady || voiceStudioTranscriptionBusy} onChange={event => { setVoiceStudioTranscriptionFile(event.target.files?.[0] || null); setVoiceStudioTranscription(""); setVoiceStudioTranscriptionStatus(""); }} />
+            </label>
+            {voiceStudioTranscriptionFile && <span className="voicestudio-file-name">{voiceStudioTranscriptionFile.name} · {(voiceStudioTranscriptionFile.size / (1024 * 1024)).toFixed(1)} MB</span>}
+            <button className="button button-submit" type="submit" disabled={!voiceStudioStatus.sttReady || !voiceStudioTranscriptionFile || voiceStudioTranscriptionBusy}>{voiceStudioTranscriptionBusy ? "Transcribing…" : "Transcribe audio"}</button>
+            <p className="voicestudio-transcription-status" aria-live="polite">{voiceStudioTranscriptionStatus || "Maximum upload size: 20 MB."}</p>
+            {voiceStudioTranscription && <div className="voicestudio-transcription-result"><p>{voiceStudioTranscription}</p><button className="button button-dark" type="button" onClick={() => { setProblem(current => `${current.trim()}${current.trim() ? "\n\n" : ""}${voiceStudioTranscription}`.slice(0, 2000)); problemRef.current?.focus(); }}>Use transcript in problem</button></div>}
+          </form>
+          <div className="voicestudio-feature-grid">
+            <article className="voicestudio-feature-card"><span>01</span><h3>Voice generation & cloning</h3><p>Generate narration or use an authorized reference voice when a compatible model is installed and licensed.</p></article>
+            <article className="voicestudio-feature-card"><span>02</span><h3>Video dubbing</h3><p>Use VoiceStudio’s dubbing workspace for transcription, translation, timed speech generation and export where supported.</p></article>
+            <article className="voicestudio-feature-card"><span>03</span><h3>Dictation & transcription</h3><p>Use available local speech-recognition models for spoken input and audio transcription.</p></article>
+            <article className="voicestudio-feature-card"><span>04</span><h3>Voice design & audio tools</h3><p>Explore voice design, batch narration and audio processing according to the installed engine and model capabilities.</p></article>
           </div>
-          <p className="voicestudio-disclaimer">VoiceStudio is a separate local service. TTS and transcription require compatible API endpoints and installed models. Models are never downloaded automatically. Browser speech features remain available as a fallback.</p>
+          <p className="voicestudio-disclaimer">VoiceStudio runs as a separate local service. Models are not downloaded automatically, and feature availability depends on installed models and their licenses. The browser Listen and microphone controls continue to work independently when VoiceStudio is unavailable.</p>
         </section>
 
         <section className="how-section" id="how-it-works">
