@@ -398,11 +398,21 @@ export default function App() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState([]);
   const [historyDeleteBusy, setHistoryDeleteBusy] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("Voice input is available in supported browsers.");
+  const [voiceStudioStatus, setVoiceStudioStatus] = useState({ checking: true, connected: false, version: "", message: "Checking local VoiceStudio…" });
   const [voiceLanguage, setVoiceLanguage] = useState("en-US");
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
   const inputBeforeVoice = useRef("");
   const problemRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/voicestudio/status")
+      .then(response => response.json())
+      .then(data => { if (active) setVoiceStudioStatus({ checking: false, connected: Boolean(data.connected), version: data.version || "", message: data.message || "" }); })
+      .catch(() => { if (active) setVoiceStudioStatus({ checking: false, connected: false, version: "", message: "Could not check VoiceStudio status." }); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -758,6 +768,29 @@ export default function App() {
               </div>
             </>
           )}
+        </section>
+
+        <section className="voicestudio-section" id="voice-studio">
+          <div className="section-intro">
+            <span className="section-kicker">LOCAL VOICE WORKSPACE</span>
+            <h2>More voice tools with <span>VoiceStudio.</span></h2>
+            <p>Connect your local VoiceStudio installation to access its dedicated voice workspace while keeping Community Helper’s existing voice input and read-aloud features.</p>
+          </div>
+          <div className="voicestudio-status-card">
+            <div className={`voicestudio-status-dot ${voiceStudioStatus.connected ? "is-connected" : ""}`} aria-hidden="true" />
+            <div className="voicestudio-status-copy">
+              <strong>{voiceStudioStatus.checking ? "Checking VoiceStudio…" : voiceStudioStatus.connected ? `VoiceStudio connected${voiceStudioStatus.version ? ` · v${voiceStudioStatus.version}` : ""}` : "VoiceStudio not detected"}</strong>
+              <p>{voiceStudioStatus.checking ? "Checking the local service on this device." : voiceStudioStatus.connected ? "The local API is responding. Open VoiceStudio to use the features supported by your installed models." : "Start VoiceStudio on this same computer, then refresh this status. This local connection is not available to a remote deployment automatically."}</p>
+            </div>
+            <button className="button button-submit voicestudio-open" type="button" onClick={() => window.open("http://127.0.0.1:3900/", "_blank", "noopener,noreferrer")}>Open VoiceStudio ↗</button>
+          </div>
+          <div className="voicestudio-feature-grid">
+            <article className="voicestudio-feature-card"><span>01</span><h3>Voice generation & cloning</h3><p>Generate narration or use an authorized reference voice when a compatible model is installed and licensed.</p></article>
+            <article className="voicestudio-feature-card"><span>02</span><h3>Video dubbing</h3><p>Use VoiceStudio’s dubbing workspace for transcription, translation, timed speech generation and export where supported.</p></article>
+            <article className="voicestudio-feature-card"><span>03</span><h3>Dictation & transcription</h3><p>Use available local speech-recognition models for spoken input and audio transcription.</p></article>
+            <article className="voicestudio-feature-card"><span>04</span><h3>Voice design & audio tools</h3><p>Explore voice design, batch narration and audio processing according to the installed engine and model capabilities.</p></article>
+          </div>
+          <p className="voicestudio-disclaimer">VoiceStudio runs as a separate local service in this first integration step. Models are not downloaded automatically, and feature availability depends on installed models and their licenses.</p>
         </section>
 
         <section className="how-section" id="how-it-works">
