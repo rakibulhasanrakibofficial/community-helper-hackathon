@@ -289,6 +289,127 @@ function createVoiceStudioRouter(options = {}) {
     }
   });
 
+
+  // Full local VoiceStudio dubbing pipeline. These endpoints exist on the desktop
+  // API; they are intentionally not pointed at the unreleased Cloud API.
+  const MAX_DUB_MEDIA_BYTES = 200 * 1024 * 1024;
+  const mediaUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_DUB_MEDIA_BYTES, files: 1, fields: 2, parts: 3 },
+    fileFilter(_req, file, callback) {
+      const ext = path.extname(file.originalname || "").toLowerCase();
+      const allowed = new Set([".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"]);
+      callback(allowed.has(ext) ? null : Object.assign(new Error("Choose a supported video or audio file."), { code: "INVALID_MEDIA_TYPE" }), allowed.has(ext));
+    }
+  });
+
+  async function localDubbingRequest(req, res, route, options = {}) {
+    const resolved = resolveBaseUrl(configuredUrl);
+    if (resolved.error) return res.status(503).json({ error: resolved.error });
+    try {
+      const upstream = await withTimeout(fetchImpl, new URL(route, resolved.base), options.init || {}, options.timeoutMs || requestTimeoutMs);
+      const contentType = upstream.headers.get("content-type") || "application/json";
+      if (!upstream.ok) {
+        const body = await readLimited(upstream, MAX_RESPONSE_BYTES).catch(() => Buffer.alloc(0));
+        let message = "VoiceStudio could not complete this dubbing step.";
+        try {
+          const parsed = JSON.parse(body.toString("utf8"));
+          if (typeof parsed.detail === "string") message = parsed.detail.slice(0, 500);
+          else if (typeof parsed.error === "string") message = parsed.error.slice(0, 500);
+        } catch { /* Keep the safe fallback message. */ }
+        return res.status(upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502).json({ error: message });
+      }
+      const isJson = contentType.toLowerCase().includes("json");
+      const body = await readLimited(upstream, isJson ? MAX_RESPONSE_BYTES : MAX_TTS_AUDIO_BYTES);
+      res.set({ "content-type": contentType, "cache-control": "no-store" });
+      return res.status(upstream.status).send(body);
+    } catch (error) {
+      if (isTimeoutError(error)) return res.status(504).json({ error: "VoiceStudio took too long. Try again or use a shorter media file." });
+      return res.status(502).json({ error: "Could not connect to VoiceStudio's local dubbing API." });
+    }
+  }
+
+  router.post("/dub/upload", (req, res, next) => {
+    mediaUpload.single("media")(req, res, error => {
+      if (error) {
+        if (error.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "Video/audio files must be 200 MB or smaller." });
+        if (error.code === "INVALID_MEDIA_TYPE") return res.status(415).json({ error: "Choose MP4, MOV, MKV, WebM, AVI, MP3, WAV, M4A, AAC, OGG, or FLAC." });
+        if (error instanceof multer.MulterError) return res.status(400).json({ error: "Upload one media file using the media field." });
+        return next(error);
+      }
+      return next();
+    });
+  }, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "Choose a video or audio file first." });
+    const form = new FormData();
+    form.append("video", new Blob([req.file.buffer], { type: req.file.mimetype || "application/octet-stream" }), safeFilename(req.file.originalname));
+    form.append("input_type", req.body?.inputType === "audio" ? "audio" : "video");
+    const resolved = resolveBaseUrl(configuredUrl);
+    if (resolved.error) return res.status(503).json({ error: resolved.error });
+    try {
+      const upstream = await withTimeout(fetchImpl, new URL("/dub/upload", resolved.base), { method: "POST", body: form, headers: { accept: "application/json" } }, requestTimeoutMs);
+      const body = await readLimited(upstream, MAX_RESPONSE_BYTES);
+      if (!upstream.ok) return res.status(upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502).json({ error: "VoiceStudio could not prepare this media. Check its format and the local app logs." });
+      let data;
+      try { data = JSON.parse(body.toString("utf8")); } catch { return res.status(502).json({ error: "VoiceStudio returned an invalid dubbing job response." }); }
+      if (typeof data.job_id !== "string" || typeof data.task_id !== "string") return res.status(502).json({ error: "VoiceStudio did not return the dubbing job and preparation task IDs." });
+      return res.status(upstream.status).json({ job_id: data.job_id, task_id: data.task_id, filename: data.filename || req.file.originalname });
+    } catch (error) {
+      if (isTimeoutError(error)) return res.status(504).json({ error: "The upload took too long. Try a smaller media file." });
+      return res.status(502).json({ error: "Could not upload media to VoiceStudio." });
+    }
+  });
+
+  router.post("/dub/:jobId/transcribe", (req, res) => {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.jobId)) return res.status(400).json({ error: "Invalid dubbing job ID." });
+    const speakers = Number(req.query.num_speakers);
+    const query = Number.isInteger(speakers) && speakers >= 1 && speakers <= 20 ? `?num_speakers=${speakers}` : "";
+    return localDubbingRequest(req, res, `/dub/transcribe/${req.params.jobId}${query}`, { init: { method: "POST", headers: { accept: "application/json" } } });
+  });
+
+  router.post("/dub/:jobId/translate", (req, res) => {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.jobId)) return res.status(400).json({ error: "Invalid dubbing job ID." });
+    const { segments, target_lang, source_lang, quality, provider } = req.body || {};
+    if (!Array.isArray(segments) || segments.length < 1 || segments.length > 1000 || typeof target_lang !== "string" || !target_lang.trim()) {
+      return res.status(400).json({ error: "Provide transcribed segments and a target language." });
+    }
+    const body = JSON.stringify({ segments, target_lang: target_lang.trim().slice(0, 64), source_lang: typeof source_lang === "string" ? source_lang.slice(0, 64) : undefined, quality: ["fast", "cinematic", "autofit"].includes(quality) ? quality : "fast", provider: typeof provider === "string" ? provider.slice(0, 64) : undefined, job_id: req.params.jobId });
+    return localDubbingRequest(req, res, "/dub/translate", { init: { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body } });
+  });
+
+  router.post("/dub/:jobId/generate", (req, res) => {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.jobId)) return res.status(400).json({ error: "Invalid dubbing job ID." });
+    const { segments, language, language_code, instruct, speed, num_step } = req.body || {};
+    if (!Array.isArray(segments) || segments.length < 1 || segments.length > 1000) return res.status(400).json({ error: "Translate the segments before generating the dub." });
+    const body = JSON.stringify({ segments, language: typeof language === "string" ? language.slice(0, 64) : "Auto", language_code: typeof language_code === "string" ? language_code.slice(0, 16) : "und", instruct: typeof instruct === "string" ? instruct.slice(0, 500) : "", speed: Number.isFinite(speed) ? Math.max(0.5, Math.min(2, speed)) : 1, num_step: Number.isInteger(num_step) ? Math.max(4, Math.min(64, num_step)) : 16 });
+    return localDubbingRequest(req, res, `/dub/generate/${req.params.jobId}`, { init: { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body } });
+  });
+
+  router.get("/dub/:jobId/tracks", (req, res) => {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.jobId)) return res.status(400).json({ error: "Invalid dubbing job ID." });
+    return localDubbingRequest(req, res, `/dub/tracks/${req.params.jobId}`);
+  });
+
+  router.get("/dub/:jobId/segments-text", (req, res) => {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.jobId)) return res.status(400).json({ error: "Invalid dubbing job ID." });
+    const lang = typeof req.query.lang === "string" ? req.query.lang.slice(0, 32) : "";
+    return localDubbingRequest(req, res, `/dub/segments-text/${req.params.jobId}?lang=${encodeURIComponent(lang)}`);
+  });
+
+  router.get("/dub/:jobId/preview-video", (req, res) => {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.jobId)) return res.status(400).json({ error: "Invalid dubbing job ID." });
+    const lang = typeof req.query.lang === "string" ? req.query.lang.slice(0, 32) : "";
+    const preserveBg = req.query.preserve_bg === "false" ? "false" : "true";
+    return localDubbingRequest(req, res, `/dub/preview-video/${req.params.jobId}?lang=${encodeURIComponent(lang)}&preserve_bg=${preserveBg}`);
+  });
+
+  router.get("/dub/:jobId/subtitles", (req, res) => {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.jobId)) return res.status(400).json({ error: "Invalid dubbing job ID." });
+    const format = req.query.format === "vtt" ? "vtt" : "srt";
+    const lang = typeof req.query.lang === "string" ? req.query.lang.slice(0, 32) : "";
+    return localDubbingRequest(req, res, `/dub/${format}/${req.params.jobId}?lang=${encodeURIComponent(lang)}`);
+  });
+
   return router;
 }
 
