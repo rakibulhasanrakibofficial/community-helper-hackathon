@@ -11,6 +11,19 @@ Community Helper keeps its browser-based microphone input and browser read-aloud
 5. Start the built app with `npm start`, or run `npm run build` and `npm run dev` for development. The existing Vite development proxy targets port 3000; when `.env` sets another `PORT`, set it to 3000 while using `npm run dev`.
 6. Open the VoiceStudio section. It checks VoiceStudio health, API capabilities, active engines, and the installed model catalog. Speech and transcription controls stay disabled until their matching active model is present and marked installed.
 
+## Secure Render deployment (remote VoiceStudio)
+
+A deployed Community Helper instance cannot reach VoiceStudio on a user's PC via `127.0.0.1`. For remote use, keep VoiceStudio bound to localhost and create an outbound Cloudflare Tunnel from the PC. Protect its hostname with a Cloudflare Access self-hosted application and a **Service Auth** policy that requires a Cloudflare Access service token. Do not open VoiceStudio's port directly to the public internet.
+
+Configure these values in Render's Environment settings (never commit actual secrets):
+
+- `VOICESTUDIO_URL=https://voice.example.com` — replace with the exact HTTPS tunnel hostname.
+- `VOICESTUDIO_ALLOWED_HOST=voice.example.com` — hostname only, without scheme or path.
+- `VOICESTUDIO_ACCESS_CLIENT_ID` — Cloudflare Access service-token client ID.
+- `VOICESTUDIO_ACCESS_CLIENT_SECRET` — Cloudflare Access service-token secret.
+
+The backend only accepts the exact allowlisted HTTPS hostname when both Access credentials are configured, and sends the credentials only in server-to-server requests. Local loopback HTTP remains supported for local development. Never put the service token in frontend code or expose it in logs or screenshots. After configuring the tunnel and Render variables, verify status, TTS and transcription; do not merge until the CI tests/build and an end-to-end check pass.
+
 ## Implemented endpoints
 
 | Community Helper route | VoiceStudio request | Request/response |
