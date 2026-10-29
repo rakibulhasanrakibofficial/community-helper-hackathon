@@ -87,7 +87,7 @@ async function readLimited(response, limitBytes) {
 
 async function fetchJson(fetchImpl, base, route, timeoutMs = STATUS_TIMEOUT_MS) {
   try {
-    const response = await withTimeout(fetchImpl, new URL(route, base), {}, timeoutMs);
+    const response = await withTimeout(fetchImpl, new URL(route, base), { headers: accessHeaders(base) }, timeoutMs);
     if (!response.ok) return null;
     const body = await readLimited(response, MAX_RESPONSE_BYTES);
     return JSON.parse(body.toString("utf8"));
@@ -242,7 +242,7 @@ function createVoiceStudioRouter(options = {}) {
     try {
       const upstream = await withTimeout(fetchImpl, new URL("/v1/audio/speech", req.voiceStudioBase), {
         method: "POST",
-        headers: { "content-type": "application/json", accept: "audio/wav" },
+        headers: accessHeaders(req.voiceStudioBase, { "content-type": "application/json", accept: "audio/wav" }),
         body: JSON.stringify({ model: "tts-1", input, voice: "alloy", response_format: "wav", speed: 1 })
       }, requestTimeoutMs);
       if (!upstream.ok) {
@@ -286,7 +286,7 @@ function createVoiceStudioRouter(options = {}) {
       const upstream = await withTimeout(fetchImpl, new URL("/v1/audio/transcriptions", req.voiceStudioBase), {
         method: "POST",
         body: form,
-        headers: { accept: "application/json" }
+        headers: accessHeaders(req.voiceStudioBase, { accept: "application/json" })
       }, requestTimeoutMs);
       if (!upstream.ok) {
         return res.status(upstream.status === 400 || upstream.status === 422 ? 422 : 502).json({ error: upstream.status === 400 || upstream.status === 422 ? "VoiceStudio could not transcribe this audio. Check that the file is readable and supported." : "VoiceStudio could not transcribe this audio." });
@@ -320,7 +320,8 @@ function createVoiceStudioRouter(options = {}) {
     const resolved = resolveBaseUrl(configuredUrl);
     if (resolved.error) return res.status(503).json({ error: resolved.error });
     try {
-      const upstream = await withTimeout(fetchImpl, new URL(route, resolved.base), options.init || {}, options.timeoutMs || requestTimeoutMs);
+      const init = options.init || {};
+      const upstream = await withTimeout(fetchImpl, new URL(route, resolved.base), { ...init, headers: accessHeaders(resolved.base, init.headers || {}) }, options.timeoutMs || requestTimeoutMs);
       const contentType = upstream.headers.get("content-type") || "application/json";
       if (!upstream.ok) {
         const body = await readLimited(upstream, MAX_RESPONSE_BYTES).catch(() => Buffer.alloc(0));
@@ -360,7 +361,7 @@ function createVoiceStudioRouter(options = {}) {
     const resolved = resolveBaseUrl(configuredUrl);
     if (resolved.error) return res.status(503).json({ error: resolved.error });
     try {
-      const upstream = await withTimeout(fetchImpl, new URL("/dub/upload", resolved.base), { method: "POST", body: form, headers: { accept: "application/json" } }, requestTimeoutMs);
+      const upstream = await withTimeout(fetchImpl, new URL("/dub/upload", resolved.base), { method: "POST", body: form, headers: accessHeaders(resolved.base, { accept: "application/json" }) }, requestTimeoutMs);
       const body = await readLimited(upstream, MAX_RESPONSE_BYTES);
       if (!upstream.ok) return res.status(upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502).json({ error: "VoiceStudio could not prepare this media. Check its format and the local app logs." });
       let data;
