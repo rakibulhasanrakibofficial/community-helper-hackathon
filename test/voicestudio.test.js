@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const { after, before, test } = require("node:test");
 const express = require("express");
-const { createVoiceStudioRouter } = require("../routes/voicestudio");
+const { createVoiceStudioRouter, resolveBaseUrl } = require("../routes/voicestudio");
 
 const BASE_URL = "http://127.0.0.1:3900";
 let server;
@@ -60,6 +60,28 @@ function voiceStudioFetch({ installed = true, unavailable = false, speechStatus 
 async function requestJson(route, init = {}) {
   return fetch(`${origin}${route}`, init);
 }
+
+test("remote VoiceStudio requires exact HTTPS allowlist and both Access secrets", () => {
+  const previous = {
+    host: process.env.VOICESTUDIO_ALLOWED_HOST,
+    id: process.env.VOICESTUDIO_ACCESS_CLIENT_ID,
+    secret: process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET
+  };
+  try {
+    process.env.VOICESTUDIO_ALLOWED_HOST = "voice.example.com";
+    process.env.VOICESTUDIO_ACCESS_CLIENT_ID = "test-client-id";
+    process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET = "test-client-secret";
+    assert.equal(resolveBaseUrl("https://voice.example.com").base.hostname, "voice.example.com");
+    assert.match(resolveBaseUrl("https://other.example.com").error, /allowlisted HTTPS hostname/i);
+    assert.match(resolveBaseUrl("http://voice.example.com").error, /allowlisted HTTPS hostname/i);
+    delete process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET;
+    assert.match(resolveBaseUrl("https://voice.example.com").error, /allowlisted HTTPS hostname/i);
+  } finally {
+    if (previous.host === undefined) delete process.env.VOICESTUDIO_ALLOWED_HOST; else process.env.VOICESTUDIO_ALLOWED_HOST = previous.host;
+    if (previous.id === undefined) delete process.env.VOICESTUDIO_ACCESS_CLIENT_ID; else process.env.VOICESTUDIO_ACCESS_CLIENT_ID = previous.id;
+    if (previous.secret === undefined) delete process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET; else process.env.VOICESTUDIO_ACCESS_CLIENT_SECRET = previous.secret;
+  }
+});
 
 test("status requires an installed active model and confirms API capabilities", async () => {
   const stub = voiceStudioFetch({ installed: false });
