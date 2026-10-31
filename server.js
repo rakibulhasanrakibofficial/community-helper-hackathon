@@ -6,6 +6,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const HelpRequest = require("./models/HelpRequest");
 const { createVoiceStudioRouter } = require("./routes/voicestudio");
+const { createImageGenerationRouter } = require("./routes/imagegen");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ app.disable("x-powered-by");
 app.use(express.json({ limit: "30kb" }));
 app.use(express.static(frontendPath));
 app.use("/api/voicestudio", createVoiceStudioRouter());
+app.use("/api/images", createImageGenerationRouter());
 
 app.get("/api/health", (_req, res) => {
   res.json({
