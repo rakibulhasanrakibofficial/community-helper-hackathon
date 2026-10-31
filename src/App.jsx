@@ -917,46 +917,6 @@ export default function App() {
             {generatedImage && <div className="visual-studio-result"><img src={generatedImage} alt="AI-generated community awareness illustration" /><a className="button button-dark" href={generatedImage} download="community-awareness-illustration.png">Download illustration ↓</a></div>}
           </form>
         </section>
-        <section className="voicestudio-section" id="voice-studio">
-          <div className="section-intro">
-            <span className="section-kicker">LOCAL VOICE WORKSPACE</span>
-            <h2>More voice tools with <span>VoiceStudio.</span></h2>
-            <p>Connect your local VoiceStudio installation to access its dedicated voice workspace while keeping Community Helper’s existing voice input and read-aloud features.</p>
-          </div>
-          <div className="voicestudio-status-card">
-            <div className={`voicestudio-status-dot ${voiceStudioStatus.connected ? "is-connected" : ""}`} aria-hidden="true" />
-            <div className="voicestudio-status-copy">
-              <strong>{voiceStudioStatus.checking ? "Checking VoiceStudio…" : voiceStudioStatus.connected ? `VoiceStudio connected${voiceStudioStatus.version ? ` · v${voiceStudioStatus.version}` : ""}` : "VoiceStudio not detected"}</strong>
-              <p>{voiceStudioStatus.checking ? "Checking the local service and installed model readiness on this device." : voiceStudioStatus.connected ? `${voiceStudioStatus.ttsReady ? "Text-to-speech ready." : voiceStudioStatus.ttsMessage} ${voiceStudioStatus.sttReady ? "Audio transcription ready." : voiceStudioStatus.sttMessage}` : `${voiceStudioStatus.message || "Start VoiceStudio on this same computer, then refresh this status."} This local connection is not available to a remote deployment automatically.`}</p>
-            </div>
-            <div className="voicestudio-status-actions">
-              <button className="button button-outline" type="button" onClick={refreshVoiceStudioStatus} disabled={voiceStudioStatus.checking}>{voiceStudioStatus.checking ? "Checking…" : "↻ Refresh status"}</button>
-              <button className="button button-submit voicestudio-open" type="button" onClick={() => window.open(voiceStudioStatus.openUrl || "http://127.0.0.1:3900/", "_blank", "noopener,noreferrer")}>Open VoiceStudio ↗</button>
-            </div>
-          </div>
-          <form className="voicestudio-upload-panel" onSubmit={transcribeWithVoiceStudio}>
-            <div>
-              <span className="section-kicker">AUDIO TRANSCRIPTION</span>
-              <h3>Transcribe an audio file</h3>
-              <p>{voiceStudioStatus.checking ? "Checking VoiceStudio transcription readiness…" : voiceStudioStatus.sttMessage} Uploads are sent to the local VoiceStudio service through this app's backend.</p>
-            </div>
-            <label className="voicestudio-file-label">Choose audio file
-              <input type="file" accept=".wav,.mp3,.m4a,.mp4,.aac,.ogg,.oga,.flac,.webm" disabled={!voiceStudioStatus.sttReady || voiceStudioTranscriptionBusy} onChange={event => { setVoiceStudioTranscriptionFile(event.target.files?.[0] || null); setVoiceStudioTranscription(""); setVoiceStudioTranscriptionStatus(""); }} />
-            </label>
-            {voiceStudioTranscriptionFile && <span className="voicestudio-file-name">{voiceStudioTranscriptionFile.name} · {(voiceStudioTranscriptionFile.size / (1024 * 1024)).toFixed(1)} MB</span>}
-            <button className="button button-submit" type="submit" disabled={!voiceStudioStatus.sttReady || !voiceStudioTranscriptionFile || voiceStudioTranscriptionBusy}>{voiceStudioTranscriptionBusy ? "Transcribing…" : "Transcribe audio"}</button>
-            <p className="voicestudio-transcription-status" aria-live="polite">{voiceStudioTranscriptionStatus || "Maximum upload size: 20 MB."}</p>
-            {voiceStudioTranscription && <div className="voicestudio-transcription-result"><p>{voiceStudioTranscription}</p><button className="button button-dark" type="button" onClick={() => { setProblem(current => `${current.trim()}${current.trim() ? "\n\n" : ""}${voiceStudioTranscription}`.slice(0, 2000)); problemRef.current?.focus(); }}>Use transcript in problem</button></div>}
-          </form>
-          <div className="voicestudio-feature-grid">
-            <article className="voicestudio-feature-card"><span>01</span><h3>Voice generation & cloning</h3><p>Generate narration or use an authorized reference voice when a compatible model is installed and licensed.</p></article>
-            <article className="voicestudio-feature-card"><span>02</span><h3>Video dubbing</h3><p>Use VoiceStudio’s dubbing workspace for transcription, translation, timed speech generation and export where supported.</p></article>
-            <article className="voicestudio-feature-card"><span>03</span><h3>Dictation & transcription</h3><p>Use available local speech-recognition models for spoken input and audio transcription.</p></article>
-            <article className="voicestudio-feature-card"><span>04</span><h3>Voice design & audio tools</h3><p>Explore voice design, batch narration and audio processing according to the installed engine and model capabilities.</p></article>
-          </div>
-          <p className="voicestudio-disclaimer">VoiceStudio runs as a separate local service. Models are not downloaded automatically, and feature availability depends on installed models and their licenses. The browser Listen and microphone controls continue to work independently when VoiceStudio is unavailable.</p>
-        </section>
-
         <section className="how-section" id="how-it-works">
           <motion.div className="section-intro" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={fadeUp}>
             <span className="section-kicker">SIMPLE BY DESIGN</span><h2>From concern to <span>community action.</span></h2><p>No complicated forms. Just a clearer way to start making a difference.</p>
