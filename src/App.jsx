@@ -392,6 +392,10 @@ export default function App() {
   const [savedDraft, setSavedDraft] = useState(() => { try { return window.localStorage.getItem("community-helper-draft") || ""; } catch { return ""; } });
   const [draftNotice, setDraftNotice] = useState("");
   const [answer, setAnswer] = useState("");
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [generatedImage, setGeneratedImage] = useState("");
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageStatus, setImageStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [historyItems, setHistoryItems] = useState([]);
@@ -726,6 +730,29 @@ export default function App() {
     }
   };
 
+  const generateCommunityImage = async event => {
+    event.preventDefault();
+    if (!imagePrompt.trim()) return;
+    setImageBusy(true);
+    setImageStatus("Creating your community illustration…");
+    setGeneratedImage("");
+    try {
+      const response = await fetch("/api/images/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ prompt: imagePrompt.trim() })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not generate the image.");
+      if (typeof data.image !== "string" || !data.image.startsWith("data:image/png;base64,")) throw new Error("The image service returned an invalid image.");
+      setGeneratedImage(data.image);
+      setImageStatus("Illustration ready. Review it before sharing.");
+    } catch (imageError) {
+      setImageStatus(imageError.message || "Image generation is unavailable.");
+    } finally {
+      setImageBusy(false);
+    }
+  };
   const transcribeWithVoiceStudio = async event => {
     event.preventDefault();
     if (!voiceStudioTranscriptionFile || !voiceStudioStatus.sttReady) return;
@@ -876,6 +903,20 @@ export default function App() {
           )}
         </section>
 
+        <section className="visual-studio-section" id="community-visuals">
+          <div className="visual-studio-heading">
+            <span className="section-kicker">COMMUNITY VISUAL STUDIO</span>
+            <h2>Turn an issue into a <span>visual story.</span></h2>
+            <p>Create an illustrative awareness visual for a community campaign. It is an illustration, not evidence of a real location or event.</p>
+          </div>
+          <form className="visual-studio-panel" onSubmit={generateCommunityImage}>
+            <label htmlFor="community-image-prompt">What should the illustration show?</label>
+            <textarea id="community-image-prompt" value={imagePrompt} maxLength={1800} onChange={event => setImagePrompt(event.target.value)} placeholder="Example: a clean neighbourhood street with residents sorting recyclable waste into bins, hopeful editorial illustration…" />
+            <div className="visual-studio-actions"><span>{imagePrompt.length}/1800 · Optional image generation</span><button className="button button-submit" type="submit" disabled={imageBusy || !imagePrompt.trim()}>{imageBusy ? "Generating…" : "✦ Generate visual"}</button></div>
+            <p className="visual-studio-status" aria-live="polite">{imageStatus || "Requires OPENAI_API_KEY on the server. Image generation may incur API charges."}</p>
+            {generatedImage && <div className="visual-studio-result"><img src={generatedImage} alt="AI-generated community awareness illustration" /><a className="button button-dark" href={generatedImage} download="community-awareness-illustration.png">Download illustration ↓</a></div>}
+          </form>
+        </section>
         <section className="voicestudio-section" id="voice-studio">
           <div className="section-intro">
             <span className="section-kicker">LOCAL VOICE WORKSPACE</span>

@@ -899,3 +899,21 @@ body {
 .voicestudio-audio-player { display:block; width:min(100%,560px); margin-top:12px; }
 .result-buttons button:disabled,.voicestudio-upload-panel button:disabled { opacity:.5; cursor:not-allowed; }
 @media(max-width:600px) { .voicestudio-upload-panel { grid-template-columns:1fr; padding:18px; } .voicestudio-upload-panel > div:first-child,.voicestudio-transcription-status,.voicestudio-transcription-result { grid-column:1; } .voicestudio-upload-panel button { width:100%; } }
+
+
+/* Community Visual Studio */
+.visual-studio-section { margin:72px 0; }
+.visual-studio-heading { max-width:760px; margin-bottom:22px; }
+.visual-studio-heading h2 { margin:9px 0; color:var(--ink); font-size:clamp(2rem,4vw,3rem); letter-spacing:-.04em; }
+.visual-studio-heading h2 span { color:#278b79; }
+.visual-studio-heading p { color:var(--muted); line-height:1.7; }
+.visual-studio-panel { display:grid; gap:13px; padding:24px; border:1px solid var(--line); border-radius:22px; background:rgba(255,255,255,.88); box-shadow:0 16px 42px rgba(24,60,50,.06); }
+.visual-studio-panel label { color:var(--ink); font-weight:750; }
+.visual-studio-panel textarea { width:100%; min-height:110px; resize:vertical; padding:14px; border:1px solid var(--line); border-radius:13px; color:var(--ink); background:#fff; font:inherit; line-height:1.6; }
+.visual-studio-actions { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.visual-studio-actions span,.visual-studio-status { color:var(--muted); font-size:.82rem; line-height:1.6; }
+.visual-studio-status { margin:0; }
+.visual-studio-result { display:grid; gap:14px; justify-items:start; margin-top:10px; }
+.visual-studio-result img { display:block; width:min(100%,640px); aspect-ratio:1; object-fit:contain; border:1px solid var(--line); border-radius:18px; background:#f5f7f5; }
+.visual-studio-result a { text-decoration:none; }
+@media(max-width:600px) { .visual-studio-panel { padding:17px; } .visual-studio-actions { align-items:stretch; flex-direction:column; } .visual-studio-actions button { width:100%; } }

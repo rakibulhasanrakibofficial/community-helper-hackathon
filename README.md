@@ -10,6 +10,7 @@ Community Helper AI turns a resident's description of a local issue into a pract
 - AI response summaries with safety advice and guidance for contacting the appropriate local authority.
 - English and Bengali voice-to-text where the browser supports Speech Recognition.
 - Browser-based text-to-speech playback, without a separate voice API key.
+- Optional community-awareness illustration generation through a server-side image API; the API key is never sent to the browser.
 - Copy and print/save-as-PDF actions.
 - Express endpoint validation and user-friendly error handling.
 
@@ -65,6 +66,8 @@ The start script builds the frontend and then serves the generated `dist` folder
 | --- | --- | --- |
 | `OLLAMA_API_KEY` | Yes for AI requests | Ollama Cloud API key. Store it only in server environment variables. |
 | `OLLAMA_MODEL` | No | Model tag; defaults to `gemma4:cloud`. |
+| `OPENAI_API_KEY` | No | Optional server-side key for community-awareness illustrations. Image requests may incur API charges. Never expose this key in frontend code. |
+| `OPENAI_IMAGE_MODEL` | No | Image model; defaults to `gpt-image-2.5-flare`. |
 | `PORT` | No | Express listening port; defaults to `3000`. |
 
 ## API
@@ -89,7 +92,7 @@ The frontend displays the response as a short overview, suggested actions, preca
 
 ## Deployment
 
-Set the service's build/install step to install dependencies, and its start command to `npm start`. The start script creates `dist` before launching Express. Configure `OLLAMA_API_KEY` in the hosting provider's environment settings. Do not put that value into Vite-prefixed public variables or frontend files.
+Set the service's build/install step to install dependencies, and its start command to `npm start`. The start script creates `dist` before launching Express. Configure `OLLAMA_API_KEY` in the hosting provider's environment settings. Optionally set `OPENAI_API_KEY` to enable illustration generation. Do not put either key into Vite-prefixed public variables or frontend files.
 
 **Deployment status:** The live deployment URL has not been verified and is intentionally not claimed here.
 
