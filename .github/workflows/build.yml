@@ -28,5 +28,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Run automated tests
+        run: npm test
+
       - name: Build production frontend
         run: npm run build
