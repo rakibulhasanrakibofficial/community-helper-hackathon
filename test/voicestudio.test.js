@@ -108,7 +108,7 @@ test("status refuses a non-loopback configured service URL", async () => {
     const response = await fetch(`http://127.0.0.1:${isolated.address().port}/api/voicestudio/status`);
     const data = await response.json();
     assert.equal(data.connected, false);
-    assert.match(data.message, /local HTTP/i);
+    assert.match(data.message, /loopback HTTP/i);
   } finally {
     await new Promise(resolve => isolated.close(resolve));
   }
