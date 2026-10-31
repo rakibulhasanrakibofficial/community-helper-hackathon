@@ -624,6 +624,30 @@ export default function App() {
     window.setTimeout(() => problemRef.current?.focus(), 0);
   };
 
+  const generateImageForProblem = async cleaned => {
+    const visualPrompt = `Create a clear, respectful community-awareness illustration about this issue: ${cleaned}. Show the situation and a constructive, safe community response. Editorial campaign illustration, polished composition, no invented text, no logos.`;
+    setImageBusy(true);
+    setImageStatus("Generating an illustration based on your community concern…");
+    setGeneratedImage("");
+    setImagePrompt(visualPrompt);
+    try {
+      const response = await fetch("/api/images/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ prompt: visualPrompt })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not generate the illustration.");
+      if (typeof data.image !== "string" || !data.image.startsWith("data:image/png;base64,")) throw new Error("The image service returned an invalid image.");
+      setGeneratedImage(data.image);
+      setImageStatus("Illustration ready. Review it before sharing.");
+    } catch (imageError) {
+      setImageStatus(imageError.message || "Image generation is unavailable. Your action plan is still ready.");
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
   const requestHelp = async prompt => {
     const cleaned = prompt.trim();
     if (!cleaned) {
@@ -639,6 +663,8 @@ export default function App() {
     setBusy(true);
     setError("");
     setAnswer("");
+    setGeneratedImage("");
+    setImageStatus("");
     try {
       const response = await fetch("/api/help", {
         method: "POST",
@@ -650,6 +676,7 @@ export default function App() {
       const generated = data.answer || data.response || data.reply;
       if (typeof generated !== "string" || !generated.trim()) throw new Error("The AI returned an empty answer. Please try again.");
       setAnswer(generated.trim());
+      void generateImageForProblem(cleaned);
       await loadHistory();
       window.setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (requestError) {
@@ -903,20 +930,20 @@ export default function App() {
           )}
         </section>
 
-        <section className="visual-studio-section" id="community-visuals">
-          <div className="visual-studio-heading">
-            <span className="section-kicker">COMMUNITY VISUAL STUDIO</span>
-            <h2>Turn an issue into a <span>visual story.</span></h2>
-            <p>Create an illustrative awareness visual for a community campaign. It is an illustration, not evidence of a real location or event.</p>
-          </div>
-          <form className="visual-studio-panel" onSubmit={generateCommunityImage}>
-            <label htmlFor="community-image-prompt">What should the illustration show?</label>
-            <textarea id="community-image-prompt" value={imagePrompt} maxLength={1800} onChange={event => setImagePrompt(event.target.value)} placeholder="Example: a clean neighbourhood street with residents sorting recyclable waste into bins, hopeful editorial illustration…" />
-            <div className="visual-studio-actions"><span>{imagePrompt.length}/1800 · Optional image generation</span><button className="button button-submit" type="submit" disabled={imageBusy || !imagePrompt.trim()}>{imageBusy ? "Generating…" : "✦ Generate visual"}</button></div>
-            <p className="visual-studio-status" aria-live="polite">{imageStatus || "Requires OPENAI_API_KEY on the server. Image generation may incur API charges."}</p>
-            {generatedImage && <div className="visual-studio-result"><img src={generatedImage} alt="AI-generated community awareness illustration" /><a className="button button-dark" href={generatedImage} download="community-awareness-illustration.png">Download illustration ↓</a></div>}
-          </form>
-        </section>
+        {(imageBusy || generatedImage || imageStatus) && (
+          <section className="visual-studio-section" id="community-visuals" aria-live="polite">
+            <div className="visual-studio-heading">
+              <span className="section-kicker">COMMUNITY VISUAL STUDIO</span>
+              <h2>Your concern, <span>visualized.</span></h2>
+              <p>An awareness illustration is generated automatically from the same description you submitted.</p>
+            </div>
+            <div className="visual-studio-panel">
+              <p className="visual-studio-status">{imageStatus || "Preparing your illustration…"}</p>
+              {imageBusy && <div className="image-generation-loading" role="status">Creating your community illustration…</div>}
+              {generatedImage && <div className="visual-studio-result"><img src={generatedImage} alt="AI-generated illustration based on the community concern" /><a className="button button-dark" href={generatedImage} download="community-awareness-illustration.png">Download illustration ↓</a></div>}
+            </div>
+          </section>
+        )}
         <section className="how-section" id="how-it-works">
           <motion.div className="section-intro" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={fadeUp}>
             <span className="section-kicker">SIMPLE BY DESIGN</span><h2>From concern to <span>community action.</span></h2><p>No complicated forms. Just a clearer way to start making a difference.</p>
